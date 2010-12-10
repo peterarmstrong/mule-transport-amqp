@@ -37,7 +37,7 @@ public class AmqpMuleMessageFactory extends AbstractMuleMessageFactory
     @Override
     protected Object extractPayload(final Object transportMessage, final String encoding) throws Exception
     {
-        return ((AmqpMessage) transportMessage).getBody();
+        return transportMessage;
     }
 
     @Override
@@ -52,6 +52,7 @@ public class AmqpMuleMessageFactory extends AbstractMuleMessageFactory
 
         final Envelope envelope = amqpMessage.getEnvelope();
         putIfNonNull(messageProperties, AmqpConstants.DELIVERY_TAG, envelope.getDeliveryTag());
+        putIfNonNull(messageProperties, AmqpConstants.REDELIVERED, envelope.isRedeliver());
         putIfNonNull(messageProperties, AmqpConstants.EXCHANGE, envelope.getExchange());
         putIfNonNull(messageProperties, AmqpConstants.ROUTING_KEY, envelope.getRoutingKey());
 

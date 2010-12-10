@@ -10,23 +10,35 @@
 
 package org.mule.transport.amqp;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 public abstract class AmqpConstants
 {
     // properties names are consistent with AMQP spec
-    public static final String USER_ID = "user-id";
-    public static final String TYPE = "type";
-    public static final String TIMESTAMP = "timestamp";
-    public static final String REPLY_TO = "reply-to";
-    public static final String PRIORITY = "priority";
-    public static final String MESSAGE_ID = "message-id";
-    public static final String EXPIRATION = "expiration";
-    public static final String DELIVERY_MODE = "delivery_mode";
-    public static final String CORRELATION_ID = "correlation-id";
-    public static final String CONTENT_TYPE = "content-type";
-    public static final String CONTENT_ENCODING = "content-encoding";
+    // (cluster-id is deprecated and not supported here)
     public static final String APP_ID = "app-id";
-    public static final String ROUTING_KEY = "routing-key";
-    public static final String EXCHANGE = "exchange";
-    public static final String DELIVERY_TAG = "delivery-tag";
     public static final String CONSUMER_TAG = "consumer-tag";
+    public static final String CONTENT_ENCODING = "content-encoding";
+    public static final String CONTENT_TYPE = "content-type";
+    public static final String CORRELATION_ID = "correlation-id";
+    public static final String DELIVERY_MODE = "delivery_mode";
+    public static final String DELIVERY_TAG = "delivery-tag";
+    public static final String EXCHANGE = "exchange";
+    public static final String EXPIRATION = "expiration";
+    public static final String MESSAGE_ID = "message-id";
+    public static final String PRIORITY = "priority";
+    public static final String REDELIVERED = "redelivered";
+    public static final String REPLY_TO = "reply-to";
+    public static final String ROUTING_KEY = "routing-key";
+    public static final String TIMESTAMP = "timestamp";
+    public static final String TYPE = "type";
+    public static final String USER_ID = "user-id";
+
+    public static final Set<String> AMQP_PROPERTY_NAMES = Collections.unmodifiableSet(new HashSet<String>(
+        Arrays.asList(new String[]{APP_ID, CONSUMER_TAG, CONTENT_ENCODING, CONTENT_TYPE, CORRELATION_ID,
+            DELIVERY_MODE, DELIVERY_TAG, EXCHANGE, EXPIRATION, MESSAGE_ID, PRIORITY, REPLY_TO, REDELIVERED,
+            ROUTING_KEY, TIMESTAMP, TYPE, USER_ID})));
 }
