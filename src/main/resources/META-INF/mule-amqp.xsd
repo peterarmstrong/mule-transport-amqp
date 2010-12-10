@@ -1,124 +1,200 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <xsd:schema xmlns="http://www.mulesoft.org/schema/mule/amqp"
-            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            xmlns:mule="http://www.mulesoft.org/schema/mule/core"
-            xmlns:schemadoc="http://www.mulesoft.org/schema/mule/schemadoc"
-            targetNamespace="http://www.mulesoft.org/schema/mule/amqp"
-            elementFormDefault="qualified"
-            attributeFormDefault="unqualified">
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mule="http://www.mulesoft.org/schema/mule/core"
+  xmlns:schemadoc="http://www.mulesoft.org/schema/mule/schemadoc"
+  targetNamespace="http://www.mulesoft.org/schema/mule/amqp"
+  elementFormDefault="qualified" attributeFormDefault="unqualified">
 
-    <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
-    <xsd:import namespace="http://www.mulesoft.org/schema/mule/core"
-                schemaLocation="http://www.mulesoft.org/schema/mule/core/3.1/mule.xsd" />
-    <xsd:import namespace = "http://www.mulesoft.org/schema/mule/schemadoc"
-                schemaLocation = "http://www.mulesoft.org/schema/mule/schemadoc/3.1/mule-schemadoc.xsd"/>
+  <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+  <xsd:import namespace="http://www.mulesoft.org/schema/mule/core"
+    schemaLocation="http://www.mulesoft.org/schema/mule/core/3.1/mule.xsd" />
+  <xsd:import namespace="http://www.mulesoft.org/schema/mule/schemadoc"
+    schemaLocation="http://www.mulesoft.org/schema/mule/schemadoc/3.1/mule-schemadoc.xsd" />
 
+  <xsd:annotation>
+    <xsd:documentation>Connects to AMQP brokers</xsd:documentation>
+    <xsd:appinfo>
+      <schemadoc:short-name>AMQP</schemadoc:short-name>
+      <schemadoc:page-title>AMQP Transport</schemadoc:page-title>
+      <schemadoc:transport-features
+        receiveEvents="true" dispatchEvents="false" responseEvents="true"
+        requestEvents="true" transactions="false" streaming="false">
+        <schemadoc:inboundMEPs in-only="true"
+          in-optional-out="true" in-out="true" />
+        <schemadoc:outboundMEPs out-only="true"
+          out-in="true" out-optional-in="true" />
+      </schemadoc:transport-features>
+    </xsd:appinfo>
+  </xsd:annotation>
+
+  <xsd:element name="connector" type="amqpConnectorType"
+    substitutionGroup="mule:abstract-connector">
     <xsd:annotation>
-        <xsd:documentation>Connects to AMQP brokers</xsd:documentation>
-        <xsd:appinfo>
-            <schemadoc:short-name>Amqp</schemadoc:short-name>
-            <schemadoc:page-title>Amqp Transport</schemadoc:page-title>
-            <schemadoc:transport-features
-            receiveEvents="true" dispatchEvents="false" responseEvents="true"
-                                          requestEvents="true"
-                                          transactions="false" streaming="false">
-                <schemadoc:inboundMEPs in-only="true" in-optional-out="true" in-out="true"/>
-                <schemadoc:outboundMEPs out-only="true" out-in="true" out-optional-in="true"/>
-            </schemadoc:transport-features>
-        </xsd:appinfo>
-    </xsd:annotation>
-
-    <xsd:element name="connector" type="amqpConnectorType" substitutionGroup="mule:abstract-connector">
-        <xsd:annotation>
-            <xsd:documentation>
-                Connects to AMQP brokers
+      <xsd:documentation>
+        Connects to AMQP brokers
             </xsd:documentation>
-        </xsd:annotation>
-    </xsd:element>
+    </xsd:annotation>
+  </xsd:element>
 
+  <xsd:complexType name="amqpConnectorType">
+    <xsd:complexContent>
+      <xsd:extension base="mule:connectorType">
+        <xsd:attribute name="host" type="xsd:string"
+          default="localhost">
+          <xsd:annotation>
+            <xsd:documentation>
+              The AMQP broker to connect to.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="port" type="mule:substitutablePortNumber"
+          default="5672">
+          <xsd:annotation>
+            <xsd:documentation>
+              The port to use to connect to the AMQP
+              broker.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="virtualHost" type="xsd:string"
+          default="/">
+          <xsd:annotation>
+            <xsd:documentation>
+              The virtual host to connect to on the
+              AMQP broker.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="username" type="xsd:string"
+          default="guest">
+          <xsd:annotation>
+            <xsd:documentation>
+              The user name to use to connect to the
+              AMQP broker.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="password" type="xsd:string"
+          default="guest">
+          <xsd:annotation>
+            <xsd:documentation>
+              The password to use to connect to the
+              AMQP broker.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="deliveryMode" default="persistent">
+          <xsd:annotation>
+            <xsd:documentation>
+              The delivery mode to use when publishing
+              to the AMQP broker.
+            </xsd:documentation>
+          </xsd:annotation>
+          <xsd:simpleType>
+            <xsd:restriction base="xsd:string">
+              <xsd:enumeration value="persistent" />
+              <xsd:enumeration value="nonpersistent" />
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>
+        <xsd:attribute name="priority" default="0">
+          <xsd:annotation>
+            <xsd:documentation>
+              The priority to use when publishing
+              to the
+              AMQP broker.
+            </xsd:documentation>
+          </xsd:annotation>
+          <xsd:simpleType>
+            <xsd:restriction base="xsd:byte">
+              <xsd:minInclusive value="0" />
+              <xsd:maxInclusive value="9" />
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>
+        <xsd:attribute name="ackMode" default="auto">
+          <xsd:annotation>
+            <xsd:documentation>
+              The acknowledgment mode to use when
+              consuming
+              from the AMQP broker.
+            </xsd:documentation>
+          </xsd:annotation>
+          <xsd:simpleType>
+            <xsd:restriction base="xsd:string">
+              <xsd:enumeration value="auto" />
+              <xsd:enumeration value="manual" />
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
 
-    <xsd:complexType name="amqpConnectorType">
-        <xsd:complexContent>
-            <xsd:extension base="mule:connectorType">
-            <!--
+  <xsd:element name="inbound-endpoint" type="inboundEndpointType"
+    substitutionGroup="mule:abstract-inbound-endpoint" />
+  <xsd:complexType name="inboundEndpointType">
+    <xsd:complexContent>
+      <xsd:extension base="mule:inboundEndpointType">
+        <xsd:attributeGroup ref="addressAttributes" />
+        <xsd:attributeGroup ref="propertyAttributes" />
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
 
-            TODO for simple property types you can just add xsd:attribute elements here
-            For complex properties with multiple values you can add custom elements and register
-            a definition parser with amqpNamespaceHandler.
+  <xsd:element name="outbound-endpoint" type="outboundEndpointType"
+    substitutionGroup="mule:abstract-outbound-endpoint" />
+  <xsd:complexType name="outboundEndpointType">
+    <xsd:complexContent>
+      <xsd:extension base="mule:outboundEndpointType">
+        <xsd:attributeGroup ref="addressAttributes" />
+        <xsd:attributeGroup ref="propertyAttributes" />
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
 
-            For example -
+  <xsd:element name="endpoint" type="globalEndpointType"
+    substitutionGroup="mule:abstract-global-endpoint" />
 
-            <xsd:attribute name="swizzleSize" type="mule:substitutableInt">
-                <xsd:annotation>
-                    <xsd:documentation>
-                        Sets the amount of swizzle available for your twizzle
-                    </xsd:documentation>
-                </xsd:annotation>
-            </xsd:attribute>
+  <xsd:complexType name="globalEndpointType">
+    <xsd:complexContent>
+      <xsd:extension base="mule:globalEndpointType">
+        <xsd:attributeGroup ref="addressAttributes" />
+        <xsd:attributeGroup ref="propertyAttributes" />
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
 
-            Note the type of the attribute is mule:substitutableInt.  For non-string simple
-            types you should use mule:substitutableBoolean, mule:substitutableLong, etc since
-            these types allow property placeholders to be used instead of the actual value.
-            The property can then be set according to the properties available to the MUle instance. i.e
+  <xsd:attributeGroup name="addressAttributes">
+    <xsd:attribute name="exchangeName" type="xsd:string"
+      use="required" />
+    <xsd:attribute name="exchangeType">
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="fanout" />
+          <xsd:enumeration value="direct" />
+          <xsd:enumeration value="topic" />
+          <xsd:enumeration value="headers" />
+        </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:attribute>
+    <xsd:attribute name="queueName" type="xsd:string" />
+  </xsd:attributeGroup>
 
-            <amqp:connector name="smallTwizzler" swizzlerSize="${small.swizzle}"/>
+  <xsd:attributeGroup name="propertyAttributes">
+    <xsd:attribute name="routingKey" type="xsd:string"
+      use="required" />
+  </xsd:attributeGroup>
 
-            where small.swizzle is set in a properties files or system property.  This makes it easy
-            to use the same config file for differnet environments such as Developement, UAT and Production
+  <xsd:element name="acknowledge-message" type="basicAckType"
+    substitutionGroup="mule:abstract-message-processor" />
 
-            -->
-
-            </xsd:extension>
-        </xsd:complexContent>
-    </xsd:complexType>
-
-    <!--
-    The following define endpoint elements for this transport. Attributes for the endpoint can be defined at the section
-    at the bottom
-    -->
-    <xsd:element name="inbound-endpoint" type="inboundEndpointType" substitutionGroup="mule:abstract-inbound-endpoint"/>
-    <xsd:complexType name="inboundEndpointType">
-        <xsd:complexContent>
-            <xsd:extension base="mule:inboundEndpointType">
-                <xsd:attributeGroup ref="addressAttributes"/>
-                <xsd:attributeGroup ref="propertyAttributes"/>
-            </xsd:extension>
-        </xsd:complexContent>
-    </xsd:complexType>
-
-    <xsd:element name="outbound-endpoint" type="outboundEndpointType" substitutionGroup="mule:abstract-outbound-endpoint"/>
-    <xsd:complexType name="outboundEndpointType">
-        <xsd:complexContent>
-            <xsd:extension base="mule:outboundEndpointType">
-                <xsd:attributeGroup ref="addressAttributes"/>
-                <xsd:attributeGroup ref="propertyAttributes"/>
-            </xsd:extension>
-        </xsd:complexContent>
-    </xsd:complexType>
-
-    <xsd:element name="endpoint" type="globalEndpointType" substitutionGroup="mule:abstract-global-endpoint"/>
-    <xsd:complexType name="globalEndpointType">
-        <xsd:complexContent>
-            <xsd:extension base="mule:globalEndpointType">
-                <xsd:attributeGroup ref="addressAttributes"/>
-                <xsd:attributeGroup ref="propertyAttributes"/>
-            </xsd:extension>
-        </xsd:complexContent>
-    </xsd:complexType>
-
-    <xsd:attributeGroup name="addressAttributes">
-    <!--
-        TODO define address attributes for this endpoints i.e. queue, host, port, etc
-        <xsd:attribute name="foo" type="xsd:string"/>
-    -->
-    </xsd:attributeGroup>
-
-    <xsd:attributeGroup name="propertyAttributes">
-         <!--
-        TODO define property attributes for this endpoint. These are properties that can configure the way the
-        transport behaves but are not used to create the endpoint address.
-        <xsd:attribute name="bar" type="xsd:string"/>
-    -->
-    </xsd:attributeGroup>
+  <xsd:complexType name="basicAckType">
+    <xsd:complexContent>
+      <xsd:extension base="mule:abstractMessageProcessorType">
+        <xsd:attribute name="multiple" type="mule:substitutableBoolean" />
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
 
 </xsd:schema>
