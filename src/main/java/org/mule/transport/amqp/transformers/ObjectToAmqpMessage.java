@@ -42,7 +42,7 @@ public class ObjectToAmqpMessage extends AbstractAmqpMessageToObject
         final String consumerTag = getProperty(message, AmqpConstants.CONSUMER_TAG);
 
         final long deliveryTag = getProperty(message, AmqpConstants.DELIVERY_TAG);
-        final boolean redelivered = getProperty(message, AmqpConstants.REDELIVERED);
+        final boolean redelivered = getProperty(message, AmqpConstants.REDELIVER);
         final String exchange = getProperty(message, AmqpConstants.EXCHANGE);
         final String routingKey = getProperty(message, AmqpConstants.ROUTING_KEY);
         final Envelope envelope = new Envelope(deliveryTag, redelivered, exchange, routingKey);

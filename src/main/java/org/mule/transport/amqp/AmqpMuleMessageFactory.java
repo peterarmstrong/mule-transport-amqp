@@ -52,7 +52,7 @@ public class AmqpMuleMessageFactory extends AbstractMuleMessageFactory
 
         final Envelope envelope = amqpMessage.getEnvelope();
         putIfNonNull(messageProperties, AmqpConstants.DELIVERY_TAG, envelope.getDeliveryTag());
-        putIfNonNull(messageProperties, AmqpConstants.REDELIVERED, envelope.isRedeliver());
+        putIfNonNull(messageProperties, AmqpConstants.REDELIVER, envelope.isRedeliver());
         putIfNonNull(messageProperties, AmqpConstants.EXCHANGE, envelope.getExchange());
         putIfNonNull(messageProperties, AmqpConstants.ROUTING_KEY, envelope.getRoutingKey());
 
@@ -64,6 +64,7 @@ public class AmqpMuleMessageFactory extends AbstractMuleMessageFactory
         final String correlationId = amqpProperties.getCorrelationId();
         putIfNonNull(messageProperties, AmqpConstants.CORRELATION_ID, correlationId);
         putIfNonNull(messageProperties, MuleProperties.MULE_CORRELATION_ID_PROPERTY, correlationId);
+        muleMessage.setCorrelationId(correlationId);
 
         putIfNonNull(messageProperties, AmqpConstants.DELIVERY_MODE, amqpProperties.getDeliveryMode());
         putIfNonNull(messageProperties, AmqpConstants.EXPIRATION, amqpProperties.getExpiration());
@@ -71,6 +72,7 @@ public class AmqpMuleMessageFactory extends AbstractMuleMessageFactory
         final String messageId = amqpProperties.getMessageId();
         putIfNonNull(messageProperties, AmqpConstants.MESSAGE_ID, messageId);
         putIfNonNull(messageProperties, MuleProperties.MULE_MESSAGE_ID_PROPERTY, messageId);
+        muleMessage.setUniqueId(messageId);
 
         putIfNonNull(messageProperties, AmqpConstants.PRIORITY, amqpProperties.getPriority());
 

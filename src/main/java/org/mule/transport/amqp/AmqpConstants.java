@@ -30,7 +30,7 @@ public abstract class AmqpConstants
     public static final String EXPIRATION = "expiration";
     public static final String MESSAGE_ID = "message-id";
     public static final String PRIORITY = "priority";
-    public static final String REDELIVERED = "redelivered";
+    public static final String REDELIVER = "redelivered";
     public static final String REPLY_TO = "reply-to";
     public static final String ROUTING_KEY = "routing-key";
     public static final String TIMESTAMP = "timestamp";
@@ -39,6 +39,6 @@ public abstract class AmqpConstants
 
     public static final Set<String> AMQP_PROPERTY_NAMES = Collections.unmodifiableSet(new HashSet<String>(
         Arrays.asList(new String[]{APP_ID, CONSUMER_TAG, CONTENT_ENCODING, CONTENT_TYPE, CORRELATION_ID,
-            DELIVERY_MODE, DELIVERY_TAG, EXCHANGE, EXPIRATION, MESSAGE_ID, PRIORITY, REPLY_TO, REDELIVERED,
+            DELIVERY_MODE, DELIVERY_TAG, EXCHANGE, EXPIRATION, MESSAGE_ID, PRIORITY, REPLY_TO, REDELIVER,
             ROUTING_KEY, TIMESTAMP, TYPE, USER_ID})));
 }
