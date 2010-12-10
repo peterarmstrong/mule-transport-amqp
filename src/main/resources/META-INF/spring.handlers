@@ -1,0 +1,1 @@
+http\://www.mulesoft.org/schema/mule/amqp=org.mule.transport.amqp.config.AmqpNamespaceHandler
