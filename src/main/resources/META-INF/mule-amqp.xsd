@@ -177,6 +177,11 @@
 
   <xsd:attributeGroup name="addressAttributes">
     <xsd:attribute name="exchangeName" type="xsd:string" />
+    <xsd:attribute name="queueName" type="xsd:string" />
+    <xsd:attribute name="routingKey" type="xsd:string" />
+  </xsd:attributeGroup>
+
+  <xsd:attributeGroup name="propertyAttributes">
     <xsd:attribute name="exchangeType">
       <xsd:simpleType>
         <xsd:restriction base="xsd:string">
@@ -191,20 +196,12 @@
       default="false" />
     <xsd:attribute name="exchangeAutoDelete" type="mule:substitutableBoolean"
       default="false" />
-
-    <xsd:attribute name="queueName" type="xsd:string" />
     <xsd:attribute name="queueDurable" type="mule:substitutableBoolean"
       default="false" />
     <xsd:attribute name="queueAutoDelete" type="mule:substitutableBoolean"
       default="false" />
     <xsd:attribute name="queueExclusive" type="mule:substitutableBoolean"
       default="false" />
-
-    <xsd:attribute name="routingKey" type="xsd:string" />
-  </xsd:attributeGroup>
-
-  <xsd:attributeGroup name="propertyAttributes">
-    <!-- Nothing yet... -->
   </xsd:attributeGroup>
 
   <xsd:element name="acknowledge-message" type="basicAckType"
