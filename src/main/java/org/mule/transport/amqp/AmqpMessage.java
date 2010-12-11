@@ -10,6 +10,12 @@
 
 package org.mule.transport.amqp;
 
+import java.util.Arrays;
+
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang.builder.ToStringBuilder;
+
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Envelope;
@@ -50,5 +56,49 @@ public class AmqpMessage
     public byte[] getBody()
     {
         return body;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Arrays.hashCode(body);
+        result = prime * result + ((consumerTag == null) ? 0 : consumerTag.hashCode());
+        result = prime * result + ((envelope == null) ? 0 : HashCodeBuilder.reflectionHashCode(envelope));
+        result = prime * result + ((properties == null) ? 0 : HashCodeBuilder.reflectionHashCode(properties));
+        return result;
+    }
+
+    @Override
+    public boolean equals(final Object obj)
+    {
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
+        final AmqpMessage other = (AmqpMessage) obj;
+        if (!Arrays.equals(body, other.body)) return false;
+        if (consumerTag == null)
+        {
+            if (other.consumerTag != null) return false;
+        }
+        else if (!consumerTag.equals(other.consumerTag)) return false;
+        if (envelope == null)
+        {
+            if (other.envelope != null) return false;
+        }
+        else if (!EqualsBuilder.reflectionEquals(envelope, other.envelope)) return false;
+        if (properties == null)
+        {
+            if (other.properties != null) return false;
+        }
+        else if (!EqualsBuilder.reflectionEquals(properties, other.properties)) return false;
+        return true;
+    }
+
+    @Override
+    public String toString()
+    {
+        return ToStringBuilder.reflectionToString(this);
     }
 }

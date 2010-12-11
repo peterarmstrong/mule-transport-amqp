@@ -20,7 +20,7 @@
         receiveEvents="true" dispatchEvents="false" responseEvents="true"
         requestEvents="true" transactions="false" streaming="false">
         <schemadoc:inboundMEPs in-only="true"
-          in-optional-out="true" in-out="true" />
+          in-optional-out="false" in-out="false" />
         <schemadoc:outboundMEPs out-only="true"
           out-in="true" out-optional-in="true" />
       </schemadoc:transport-features>
@@ -83,7 +83,7 @@
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="deliveryMode" default="persistent">
+        <xsd:attribute name="deliveryMode" default="PERSISTENT">
           <xsd:annotation>
             <xsd:documentation>
               The delivery mode to use when publishing
@@ -92,17 +92,16 @@
           </xsd:annotation>
           <xsd:simpleType>
             <xsd:restriction base="xsd:string">
-              <xsd:enumeration value="persistent" />
-              <xsd:enumeration value="nonpersistent" />
+              <xsd:enumeration value="PERSISTENT" />
+              <xsd:enumeration value="NON_PERSISTENT" />
             </xsd:restriction>
           </xsd:simpleType>
         </xsd:attribute>
         <xsd:attribute name="priority" default="0">
           <xsd:annotation>
             <xsd:documentation>
-              The priority to use when publishing
-              to the
-              AMQP broker.
+              The priority to use when publishing to
+              the AMQP broker.
             </xsd:documentation>
           </xsd:annotation>
           <xsd:simpleType>
@@ -112,18 +111,29 @@
             </xsd:restriction>
           </xsd:simpleType>
         </xsd:attribute>
-        <xsd:attribute name="ackMode" default="auto">
+        <xsd:attribute name="ackMode" default="AUTO">
           <xsd:annotation>
             <xsd:documentation>
               The acknowledgment mode to use when
-              consuming
-              from the AMQP broker.
+              consuming from the AMQP broker.
             </xsd:documentation>
           </xsd:annotation>
           <xsd:simpleType>
             <xsd:restriction base="xsd:string">
-              <xsd:enumeration value="auto" />
-              <xsd:enumeration value="manual" />
+              <xsd:enumeration value="AUTO">
+                <xsd:annotation>
+                  <xsd:documentation>The AMQP broker will consider
+                    messages acknowledged once delivered.
+                  </xsd:documentation>
+                </xsd:annotation>
+              </xsd:enumeration>
+              <xsd:enumeration value="MANUAL">
+                <xsd:annotation>
+                  <xsd:documentation>The AMQP broker will expect
+                    explicit message acknowledgements.
+                  </xsd:documentation>
+                </xsd:annotation>
+              </xsd:enumeration>
             </xsd:restriction>
           </xsd:simpleType>
         </xsd:attribute>
@@ -166,8 +176,7 @@
   </xsd:complexType>
 
   <xsd:attributeGroup name="addressAttributes">
-    <xsd:attribute name="exchangeName" type="xsd:string"
-      use="required" />
+    <xsd:attribute name="exchangeName" type="xsd:string" />
     <xsd:attribute name="exchangeType">
       <xsd:simpleType>
         <xsd:restriction base="xsd:string">
@@ -178,12 +187,24 @@
         </xsd:restriction>
       </xsd:simpleType>
     </xsd:attribute>
+    <xsd:attribute name="exchangeDurable" type="mule:substitutableBoolean"
+      default="false" />
+    <xsd:attribute name="exchangeAutoDelete" type="mule:substitutableBoolean"
+      default="false" />
+
     <xsd:attribute name="queueName" type="xsd:string" />
+    <xsd:attribute name="queueDurable" type="mule:substitutableBoolean"
+      default="false" />
+    <xsd:attribute name="queueAutoDelete" type="mule:substitutableBoolean"
+      default="false" />
+    <xsd:attribute name="queueExclusive" type="mule:substitutableBoolean"
+      default="false" />
+
+    <xsd:attribute name="routingKey" type="xsd:string" />
   </xsd:attributeGroup>
 
   <xsd:attributeGroup name="propertyAttributes">
-    <xsd:attribute name="routingKey" type="xsd:string"
-      use="required" />
+    <!-- Nothing yet... -->
   </xsd:attributeGroup>
 
   <xsd:element name="acknowledge-message" type="basicAckType"

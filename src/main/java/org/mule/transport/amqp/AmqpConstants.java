@@ -17,6 +17,40 @@ import java.util.Set;
 
 public abstract class AmqpConstants
 {
+    public enum DeliveryMode
+    {
+        NON_PERSISTENT(1), PERSISTENT(2);
+
+        private final int code;
+
+        private DeliveryMode(final int code)
+        {
+            this.code = code;
+        }
+
+        public int getCode()
+        {
+            return code;
+        }
+    }
+
+    public enum AckMode
+    {
+        AUTO(true), MANUAL(false);
+
+        private final boolean autoAck;
+
+        private AckMode(final boolean autoAck)
+        {
+            this.autoAck = autoAck;
+        }
+
+        public boolean isAutoAck()
+        {
+            return autoAck;
+        }
+    }
+
     // properties names are consistent with AMQP spec
     // (cluster-id is deprecated and not supported here)
     public static final String APP_ID = "app-id";

@@ -10,29 +10,44 @@
 
 package org.mule.transport.amqp.transformers;
 
-import org.mule.api.MuleMessage;
-import org.mule.tck.AbstractMuleTestCase;
+import org.mule.api.transformer.Transformer;
+import org.mule.transformer.AbstractTransformerTestCase;
 import org.mule.transport.amqp.AmqpMessage;
 import org.mule.transport.amqp.AmqpMuleMessageFactory;
 import org.mule.transport.amqp.AmqpMuleMessageFactoryTestCase;
 
-import edu.emory.mathcs.backport.java.util.Arrays;
-
-public class AmqpMessageToObjectTest extends AbstractMuleTestCase
+public class AmqpMessageToObjectTest extends AbstractTransformerTestCase
 {
-    public void testTransformMessage() throws Exception
+    private final AmqpMessage amqpMessage = AmqpMuleMessageFactoryTestCase.getTestMessage();
+
+    @Override
+    public Transformer getTransformer() throws Exception
     {
-        final AmqpMessage amqpMessage = AmqpMuleMessageFactoryTestCase.getTestMessage();
+        return new AmqpMessageToObject();
+    }
 
-        final AmqpMessageToObject amqpMessageToObject = new AmqpMessageToObject();
-        final AmqpMuleMessageFactory amqpMuleMessageFactory = new AmqpMuleMessageFactory(muleContext);
-        final MuleMessage muleMessage = amqpMuleMessageFactory.create(amqpMessage, "utf-8");
+    @Override
+    public Transformer getRoundTripTransformer() throws Exception
+    {
+        return null;
+    }
 
-        final Object result = amqpMessageToObject.transformMessage(muleMessage, "iso-8859-1");
+    @Override
+    public Object getTestData()
+    {
+        try
+        {
+            return new AmqpMuleMessageFactory(muleContext).create(amqpMessage, "utf-8");
+        }
+        catch (final Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
 
-        assertTrue(result instanceof byte[]);
-        assertTrue(Arrays.equals(amqpMessage.getBody(), (byte[]) result));
-
-        AmqpMuleMessageFactoryTestCase.checkInboundProperties(amqpMessage, muleMessage);
+    @Override
+    public Object getResultData()
+    {
+        return amqpMessage.getBody();
     }
 }

@@ -10,105 +10,172 @@
 
 package org.mule.transport.amqp;
 
-import org.mule.transport.ConnectException;
-import org.mule.transport.AbstractMessageReceiver;
+import java.io.IOException;
+
+import javax.resource.spi.work.Work;
+import javax.resource.spi.work.WorkException;
+
+import org.mule.api.MuleMessage;
+import org.mule.api.MuleRuntimeException;
 import org.mule.api.construct.FlowConstruct;
-import org.mule.api.service.Service;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.lifecycle.CreateException;
 import org.mule.api.transport.Connector;
+import org.mule.config.i18n.MessageFactory;
+import org.mule.transport.AbstractMessageReceiver;
+import org.mule.transport.ConnectException;
+
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.Envelope;
 
 /**
  * <code>AmqpMessageReceiver</code> TODO document
  */
-public class AmqpMessageReceiver extends  AbstractMessageReceiver 
+public class AmqpMessageReceiver extends AbstractMessageReceiver
 {
-    /* For general guidelines on writing transports see
-       http://www.mulesoft.org/documentation/display/MULE3USER/Creating+Transports */
+    private final AmqpConnector amqpConnector;
+    private final String queueName;
+    private Channel channel;
+    private String consumerTag;
 
-    public AmqpMessageReceiver(Connector connector, FlowConstruct flowConstruct,
-                              InboundEndpoint endpoint)
-            throws CreateException
+    public AmqpMessageReceiver(final Connector connector,
+                               final FlowConstruct flowConstruct,
+                               final InboundEndpoint endpoint) throws CreateException
     {
         super(connector, flowConstruct, endpoint);
+        this.amqpConnector = (AmqpConnector) connector;
+
+        // FIXME review this
+        this.queueName = endpoint.getEndpointURI().getHost();
     }
 
     @Override
     public void doConnect() throws ConnectException
     {
-        /* IMPLEMENTATION NOTE: This method should make a connection to the underlying
-           transport i.e. connect to a socket or register a soap service. When
-           there is no connection to be made this method should be used to
-           check that resources are available. For example the
-           FileMessageReceiver checks that the directories it will be using
-           are available and readable. The MessageReceiver should remain in a
-           'stopped' state even after the doConnect() method is called. This
-           means that a connection has been made but no events will be
-           received until the start() method is called.
+        try
+        {
+            channel = amqpConnector.newChannel();
 
-           Calling start() on the MessageReceiver will call doConnect() if the receiver
-           hasn't connected already. */
-
-        /* IMPLEMENTATION NOTE: If you need to spawn any threads such as
-           worker threads for this receiver you can schedule a worker thread
-           with the work manager i.e.
-
-             getWorkManager().scheduleWork(worker, WorkManager.INDEFINITE, null, null);
-           Where 'worker' implemments javax.resource.spi.work.Work */
-
-        /* IMPLEMENTATION NOTE: When throwing an exception from this method
-           you need to throw an ConnectException that accepts a Message, a
-           cause exception and a reference to this MessageReceiver i.e.
-
-             throw new ConnectException(new Message(Messages.FAILED_TO_SCHEDULE_WORK), e, this);
-        */
-
-        // TODO the code necessary to connect to the underlying resource
+            // FIXME create exchange if exchange name, type are provided
+            // FIXME if exchange is not recreated but queue binding is asked, declare it passively to ensure its
+            // existence
+            // FIXME if no queue name has been provided, create an anonymous one
+            // FIXME if a queue name has been provided, declare it passively to ensure its existence
+            // FIXME bind queue to exchange if routingKey is provided
+        }
+        catch (final IOException ioe)
+        {
+            throw new ConnectException(MessageFactory.createStaticMessage("Error when opening new channel"),
+                ioe, this);
+        }
     }
 
     @Override
     public void doDisconnect() throws ConnectException
     {
-        /* IMPLEMENTATION NOTE: Disconnects and tidies up any rources allocted
-           using the doConnect() method. This method should return the
-           MessageReceiver into a disconnected state so that it can be
-           connected again using the doConnect() method. */
-
-        // TODO release any resources here
-    }
-
-    @Override
-    public void doStart()
-    {
-        // Optional; does not need to be implemented. Delete if not required
-
-        /* IMPLEMENTATION NOTE: Should perform any actions necessary to enable
-           the reciever to start reciving events. This is different to the
-           doConnect() method which actually makes a connection to the
-           transport, but leaves the MessageReceiver in a stopped state. For
-           polling-based MessageReceivers the start() method simply starts the
-           polling thread. What action is performed here depends on
-           the transport being used. Most of the time a custom provider
-           doesn't need to override this method. */
-    }
-
-    @Override
-    public void doStop()
-    {
-        // Optional; does not need to be implemented. Delete if not required
-
-        /* IMPLEMENTATION NOTE: Should perform any actions necessary to stop
-           the reciever from receiving events. */
+        try
+        {
+            channel.close();
+        }
+        catch (final IOException ioe)
+        {
+            throw new ConnectException(MessageFactory.createStaticMessage("Error when closing channel: "
+                                                                          + channel), ioe, this);
+        }
     }
 
     @Override
     public void doDispose()
     {
-        // Optional; does not need to be implemented. Delete if not required
-
-        /* IMPLEMENTATION NOTE: Is called when the Conector is being dispoed
-           and should clean up any resources. The doStop() and doDisconnect()
-           methods will be called implicitly when this method is called. */
+        channel = null;
     }
-    
+
+    @Override
+    public void doStart()
+    {
+        try
+        {
+            channel.basicConsume(queueName, amqpConnector.getAckMode().isAutoAck(), new DefaultConsumer(
+                channel)
+            {
+                @Override
+                public void handleDelivery(final String consumerTag,
+                                           final Envelope envelope,
+                                           final AMQP.BasicProperties properties,
+                                           final byte[] body) throws IOException
+                {
+                    final AmqpMessage amqpMessage = new AmqpMessage(consumerTag, envelope, properties, body);
+                    deliverAmqpMessage(amqpMessage);
+                }
+            });
+        }
+        catch (final IOException ioe)
+        {
+            throw new MuleRuntimeException(
+                MessageFactory.createStaticMessage("Error when subscribing to queue " + queueName
+                                                   + " on channel: " + channel), ioe);
+        }
+    }
+
+    @Override
+    public void doStop()
+    {
+        try
+        {
+            channel.basicCancel(consumerTag);
+        }
+        catch (final IOException ioe)
+        {
+            throw new MuleRuntimeException(
+                MessageFactory.createStaticMessage("Error when cancelling subscription " + consumerTag
+                                                   + " on channel: " + channel), ioe);
+        }
+    }
+
+    private void deliverAmqpMessage(final AmqpMessage amqpMessage)
+    {
+        try
+        {
+            getWorkManager().scheduleWork(new AmqpMessageRouterWork(amqpMessage));
+        }
+        catch (final WorkException we)
+        {
+            throw new MuleRuntimeException(MessageFactory.createStaticMessage("Work manager can't deliver: "
+                                                                              + amqpMessage), we);
+        }
+    }
+
+    private final class AmqpMessageRouterWork implements Work
+    {
+        private AmqpMessage amqpMessage;
+
+        private AmqpMessageRouterWork(final AmqpMessage amqpMessage)
+        {
+            this.amqpMessage = amqpMessage;
+        }
+
+        public void run()
+        {
+            try
+            {
+                final MuleMessage muleMessage = amqpConnector.getMuleMessageFactory().create(amqpMessage,
+                    amqpConnector.getMuleContext().getConfiguration().getDefaultEncoding());
+
+                routeMessage(muleMessage);
+            }
+            catch (final Exception e)
+            {
+                throw new MuleRuntimeException(MessageFactory.createStaticMessage("Impossible to route: "
+                                                                                  + amqpMessage), e);
+            }
+
+        }
+
+        public void release()
+        {
+            amqpMessage = null;
+        }
+    }
 }

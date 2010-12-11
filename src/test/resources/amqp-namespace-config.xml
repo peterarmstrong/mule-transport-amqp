@@ -1,13 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp"
-    xsi:schemaLocation="
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp"
+  xsi:schemaLocation="
        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.1/mule.xsd
        http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/3.1/mule-amqp.xsd">
 
-    <amqp:connector name="amqpConnector">
-        <!-- TODO Add connector specific properties here and then assert that 
-             they have been set in org.mule.transport.amqp.AmqpNamespaceHandlerTestCase -->
-    </amqp:connector>
+  <amqp:connector name="amqpDefaultConnector" />
+
+  <!-- Could be used to declare an exchange, a queue, bind the latter to the former and listen to it as an inbound endpoint -->
+  <amqp:endpoint name="amqpFullGlobalEndpoint"
+                 exchangeName="target-exchange"
+                 exchangeType="fanout"
+                 exchangeDurable="true"
+                 exchangeAutoDelete="false"
+                 queueName="target-queue"
+                 queueDurable="true"
+                 queueAutoDelete="false"
+                 queueExclusive="true"
+                 routingKey="a.b.c"
+                 connector-ref="amqpDefaultConnector" />
+                 
+  <!-- Create tests for all possible endpoints (in and out) -->
 </mule>

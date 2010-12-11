@@ -10,28 +10,18 @@
 
 package org.mule.transport.amqp;
 
+import org.mule.api.endpoint.EndpointURI;
+import org.mule.endpoint.MuleEndpointURI;
 import org.mule.tck.AbstractMuleTestCase;
 
 public class AmqpEndpointTestCase extends AbstractMuleTestCase
 {
-    /* For general guidelines on writing transports see
-       http://www.mulesoft.org/documentation/display/MULE3USER/Creating+Transports */
-
     public void testValidEndpointURI() throws Exception
     {
-        // TODO test creating and asserting Endpoint values eg
-
-        /*
-        EndpointURI url = new MuleEndpointURI("tcp://localhost:7856");
-        assertEquals("tcp", url.getScheme());
-        assertEquals("tcp://localhost:7856", url.getAddress());
-        assertNull(url.getEndpointName());
-        assertEquals(7856, url.getPort());
-        assertEquals("localhost", url.getHost());
-        assertEquals("tcp://localhost:7856", url.getAddress());
-        assertEquals(0, url.getParams().size());
-        */
-
-        throw new UnsupportedOperationException("testValidEndpointURI");
+        final EndpointURI url = new MuleEndpointURI("amqp://resource.name", muleContext);
+        assertEquals("amqp", url.getScheme());
+        // using the host as resource name could be an issue because exchange and queue names accept characters that are
+        // invalid in host names: ^[a-zA-Z0-9-_.:]*$
+        assertEquals("resource.name", url.getHost());
     }
 }

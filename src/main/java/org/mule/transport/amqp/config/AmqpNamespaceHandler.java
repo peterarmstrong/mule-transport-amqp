@@ -7,30 +7,59 @@
  * license, a copy of which has been included with this distribution in the
  * LICENSE.txt file.
  */
+
 package org.mule.transport.amqp.config;
 
+import org.mule.config.spring.factories.InboundEndpointFactoryBean;
+import org.mule.config.spring.factories.OutboundEndpointFactoryBean;
 import org.mule.config.spring.handlers.AbstractMuleNamespaceHandler;
+import org.mule.config.spring.parsers.MuleDefinitionParser;
+import org.mule.config.spring.parsers.specific.endpoint.TransportEndpointDefinitionParser;
+import org.mule.config.spring.parsers.specific.endpoint.TransportGlobalEndpointDefinitionParser;
 import org.mule.transport.amqp.AmqpConnector;
-import org.mule.endpoint.URIBuilder;
 
 /**
- * Registers a Bean Definition Parser for handling <code><amqp:connector></code> elements
- * and supporting endpoint elements.
+ * Registers a Bean Definition Parser for handling <code><amqp:connector></code> elements and supporting endpoint
+ * elements.
  */
 public class AmqpNamespaceHandler extends AbstractMuleNamespaceHandler
 {
+    // TODO refactor to constants
+    public static final String[][] AMQP_ENDPOINT_ATTRIBUTES = new String[][]{
+        new String[]{"exchangeName", "routingKey"}, new String[]{"exchangeName", "queueName", "routingKey"},
+        new String[]{"queueName"}};
+
     public void init()
     {
-        /* This creates handlers for 'endpoint', 'outbound-endpoint' and 'inbound-endpoint' elements.
-           The defaults are sufficient unless you have endpoint styles different from the Mule standard ones
-           The URIBuilder as constants for common required attributes, but you can also pass in a user-defined String[].
-         */
-        registerStandardTransportEndpoints(AmqpConnector.AMQP, URIBuilder.PATH_ATTRIBUTES);
+        registerAmqpTransportEndpoints();
 
-        /* This will create the handler for your custom 'connector' element.  You will need to add handlers for any other
-           xml elements you define.  For more information see:
-           http://www.mulesoft.org/documentation/display/MULE3USER/Creating+a+Custom+XML+Namespace
-        */
         registerConnectorDefinitionParser(AmqpConnector.class);
+    }
+
+    protected void registerAmqpTransportEndpoints()
+    {
+        registerErlangEndpointDefinitionParser("endpoint", new TransportGlobalEndpointDefinitionParser(
+            AmqpConnector.AMQP, TransportGlobalEndpointDefinitionParser.PROTOCOL,
+            TransportGlobalEndpointDefinitionParser.RESTRICTED_ENDPOINT_ATTRIBUTES, AMQP_ENDPOINT_ATTRIBUTES,
+            new String[][]{}));
+
+        registerErlangEndpointDefinitionParser("inbound-endpoint", new TransportEndpointDefinitionParser(
+            AmqpConnector.AMQP, TransportEndpointDefinitionParser.PROTOCOL, InboundEndpointFactoryBean.class,
+            TransportEndpointDefinitionParser.RESTRICTED_ENDPOINT_ATTRIBUTES, AMQP_ENDPOINT_ATTRIBUTES,
+            new String[][]{}));
+
+        registerErlangEndpointDefinitionParser("outbound-endpoint", new TransportEndpointDefinitionParser(
+            AmqpConnector.AMQP, TransportEndpointDefinitionParser.PROTOCOL,
+            OutboundEndpointFactoryBean.class,
+            TransportEndpointDefinitionParser.RESTRICTED_ENDPOINT_ATTRIBUTES, AMQP_ENDPOINT_ATTRIBUTES,
+            new String[][]{}));
+    }
+
+    protected void registerErlangEndpointDefinitionParser(final String element,
+                                                          final MuleDefinitionParser parser)
+    {
+        // parser.addAlias("", URIBuilder.PATH);
+        // parser.addAlias("", URIBuilder.HOST);
+        registerBeanDefinitionParser(element, parser);
     }
 }

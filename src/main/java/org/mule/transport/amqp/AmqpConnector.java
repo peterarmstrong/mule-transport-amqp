@@ -10,28 +10,37 @@
 
 package org.mule.transport.amqp;
 
+import java.io.IOException;
+
 import org.mule.api.MuleContext;
 import org.mule.api.MuleException;
 import org.mule.api.lifecycle.InitialisationException;
 import org.mule.transport.AbstractConnector;
+import org.mule.transport.amqp.AmqpConstants.AckMode;
+import org.mule.transport.amqp.AmqpConstants.DeliveryMode;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
 
 /**
- * <code>AmqpConnector</code> TODO document
+ * Connects to a particular virtual host on a particular AMQP broker.
  */
 public class AmqpConnector extends AbstractConnector
 {
-    /* This constant defines the main transport protocol identifier */
-    public static final String AMQP = "AMQP";
+    public static final String AMQP = "amqp";
 
-    /*
-     * For general guidelines on writing transports see
-     * http://www.mulesoft.org/documentation/display/MULE3USER/Creating+Transports
-     */
+    private String host;
+    private int port;
+    private String virtualHost;
+    private String username;
+    private String password;
+    private DeliveryMode deliveryMode;
+    private byte priority;
+    private AckMode ackMode;
 
-    /*
-     * IMPLEMENTATION NOTE: All configuaration for the transport should be set on the Connector object, this is the
-     * object that gets configured in MuleXml
-     */
+    private ConnectionFactory connectionFactory;
+    private Connection connection;
 
     public AmqpConnector(final MuleContext context)
     {
@@ -41,70 +50,107 @@ public class AmqpConnector extends AbstractConnector
     @Override
     public void doInitialise() throws InitialisationException
     {
-        // Optional; does not need to be implemented. Delete if not required
-
-        /*
-         * IMPLEMENTATION NOTE: Is called once all bean properties have been set on the connector and can be used to
-         * validate and initialise the connectors state.
-         */
-    }
-
-    @Override
-    public void doConnect() throws Exception
-    {
-        // Optional; does not need to be implemented. Delete if not required
-
-        /*
-         * IMPLEMENTATION NOTE: Makes a connection to the underlying resource. When connections are managed at the
-         * receiver/dispatcher level, this method may do nothing
-         */
-    }
-
-    @Override
-    public void doDisconnect() throws Exception
-    {
-        // Optional; does not need to be implemented. Delete if not required
-
-        /*
-         * IMPLEMENTATION NOTE: Disconnects any connections made in the connect method If the connect method did not do
-         * anything then this method shouldn't do anything either.
-         */
-    }
-
-    @Override
-    public void doStart() throws MuleException
-    {
-        // Optional; does not need to be implemented. Delete if not required
-
-        /*
-         * IMPLEMENTATION NOTE: If there is a single server instance or connection associated with the connector i.e.
-         * Jms Connection or Jdbc Connection, this method should put the resource in a started state here.
-         */
-    }
-
-    @Override
-    public void doStop() throws MuleException
-    {
-        // Optional; does not need to be implemented. Delete if not required
-
-        /*
-         * IMPLEMENTATION NOTE: Should put any associated resources into a stopped state. Mule will automatically call
-         * the stop() method.
-         */
+        connectionFactory = new ConnectionFactory();
+        connectionFactory.setHost(host);
+        connectionFactory.setPort(port);
+        connectionFactory.setVirtualHost(virtualHost);
+        connectionFactory.setUsername(username);
+        connectionFactory.setPassword(password);
     }
 
     @Override
     public void doDispose()
     {
-        // Optional; does not need to be implemented. Delete if not required
+        connection = null;
+        connectionFactory = null;
+    }
 
-        /*
-         * IMPLEMENTATION NOTE: Should clean up any open resources associated with the connector.
-         */
+    @Override
+    public void doConnect() throws Exception
+    {
+        connection = connectionFactory.newConnection();
+    }
+
+    @Override
+    public void doDisconnect() throws Exception
+    {
+        connection.close();
+    }
+
+    @Override
+    public void doStart() throws MuleException
+    {
+        // NOOP
+    }
+
+    @Override
+    public void doStop() throws MuleException
+    {
+        // NOOP
+    }
+
+    public Channel newChannel() throws IOException
+    {
+        return connection.createChannel();
     }
 
     public String getProtocol()
     {
         return AMQP;
+    }
+
+    public byte getPriority()
+    {
+        return priority;
+    }
+
+    public void setPriority(final byte priority)
+    {
+        this.priority = priority;
+    }
+
+    public AckMode getAckMode()
+    {
+        return ackMode;
+    }
+
+    public void setAckMode(final AckMode ackMode)
+    {
+        this.ackMode = ackMode;
+    }
+
+    public DeliveryMode getDeliveryMode()
+    {
+        return deliveryMode;
+    }
+
+    public void setDeliveryMode(final DeliveryMode deliveryMode)
+    {
+        this.deliveryMode = deliveryMode;
+    }
+
+    public void setHost(final String host)
+    {
+        this.host = host;
+    }
+
+    public void setPort(final int port)
+    {
+        this.port = port;
+    }
+
+    public void setVirtualHost(final String virtualHost)
+    {
+        this.virtualHost = virtualHost;
+    }
+
+    public void setUsername(final String username)
+    {
+        this.username = username;
+    }
+
+    public void setPassword(final String password)
+    {
+        this.password = password;
     }
 }

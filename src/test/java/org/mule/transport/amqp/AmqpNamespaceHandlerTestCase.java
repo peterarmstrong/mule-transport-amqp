@@ -7,8 +7,10 @@
  * license, a copy of which has been included with this distribution in the
  * LICENSE.txt file.
  */
+
 package org.mule.transport.amqp;
 
+import org.mule.api.endpoint.EndpointBuilder;
 import org.mule.tck.FunctionalTestCase;
 
 /**
@@ -19,17 +21,26 @@ public class AmqpNamespaceHandlerTestCase extends FunctionalTestCase
     @Override
     protected String getConfigResources()
     {
-        //TODO You'll need to edit this file to configure the properties specific to your transport
         return "amqp-namespace-config.xml";
     }
 
-    public void testAmqpConfig() throws Exception
+    public void testAmqpDefaultConnector() throws Exception
     {
-        AmqpConnector c = (AmqpConnector) muleContext.getRegistry().lookupConnector("amqpConnector");
+        final AmqpConnector c = (AmqpConnector) muleContext.getRegistry().lookupConnector(
+            "amqpDefaultConnector");
         assertNotNull(c);
         assertTrue(c.isConnected());
         assertTrue(c.isStarted());
 
-        //TODO Assert specific properties are configured correctly
+        // TODO Assert specific properties are configured correctly
+    }
+
+    public void testAmqpFullGlobalEndpoint() throws Exception
+    {
+        final EndpointBuilder endpointBuilder = muleContext.getRegistry().lookupEndpointBuilder(
+            "amqpFullGlobalEndpoint");
+        assertNotNull(endpointBuilder);
+
+        // TODO Assert specific properties are configured correctly
     }
 }

@@ -15,23 +15,19 @@ import org.mule.tck.AbstractMuleTestCase;
 
 public class AmqpConnectorFactoryTestCase extends AbstractMuleTestCase
 {
-    /* For general guidelines on writing transports see
-       http://www.mulesoft.org/documentation/display/MULE3USER/Creating+Transports */
-
     public void testCreateFromFactory() throws Exception
     {
-        InboundEndpoint endpoint = muleContext.getRegistry()
-                .lookupEndpointFactory().getInboundEndpoint(getEndpointURI());
+        final InboundEndpoint endpoint = muleContext.getRegistry()
+            .lookupEndpointFactory()
+            .getInboundEndpoint(getEndpointURI());
         assertNotNull(endpoint);
         assertNotNull(endpoint.getConnector());
         assertTrue(endpoint.getConnector() instanceof AmqpConnector);
         assertEquals(getEndpointURI(), endpoint.getEndpointURI().getAddress());
     }
 
-    public String getEndpointURI() 
+    public String getEndpointURI()
     {
-        // TODO return a valid endpoint URI string for your transport
-        // i.e. tcp://localhost:1234
-        throw new UnsupportedOperationException("getEndpointURI");
+        return "amqp://resource.name";
     }
 }
