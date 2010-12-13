@@ -5,9 +5,12 @@
        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.1/mule.xsd
        http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/3.1/mule-amqp.xsd">
 
+  <amqp:amqpmessage-to-object-transformer name="a2o" />
+  <amqp:object-to-amqpmessage-transformer name="o2a" />
+
   <amqp:connector name="amqpDefaultConnector" />
 
-  <!-- Could be used to declare an exchange, a queue, bind the latter to the former and listen to it as an inbound endpoint -->
+  <!-- Declare an exchange, a queue, bind the latter to the former -->
   <amqp:endpoint name="amqpFullGlobalEndpoint"
                  exchangeName="target-exchange"
                  exchangeType="fanout"
@@ -19,6 +22,34 @@
                  queueExclusive="true"
                  routingKey="a.b.c"
                  connector-ref="amqpDefaultConnector" />
+
+  <!-- Use an existing queue -->
+  <amqp:endpoint name="amqpExistingQueueGlobalEndpoint"
+                 queueName="target-queue" />
+
+  <!-- Declare a server-named exclusive queue and bind it to an existing exchange -->                 
+  <amqp:endpoint name="amqpPrivateQueueGlobalEndpoint"
+                 exchangeName="target-exchange"
+                 routingKey="a.b.c" />
+
+  <!-- Declare a queue and bind it to an existing exchange -->                 
+  <amqp:endpoint name="amqpDeclareQueueGlobalEndpoint"
+                 exchangeName="target-exchange"
+                 queueName="target-queue"
+                 queueDurable="true"
+                 queueAutoDelete="false"
+                 queueExclusive="false"
+                 routingKey="a.b.c" />
                  
-  <!-- Create tests for all possible endpoints (in and out) -->
+  <!-- Use an existing exchange -->                 
+  <amqp:endpoint name="amqpExistingExchangeGlobalEndpoint"
+                 exchangeName="target-exchange" />
+                 
+  <!-- Declare an exchange -->                 
+  <amqp:endpoint name="amqpDeclareExchangeGlobalEndpoint"
+                 exchangeName="target-exchange"
+                 exchangeType="topic"
+                 exchangeDurable="true"
+                 exchangeAutoDelete="false" />
+                 
 </mule>

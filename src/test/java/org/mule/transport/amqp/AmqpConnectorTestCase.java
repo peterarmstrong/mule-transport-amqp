@@ -12,42 +12,42 @@ package org.mule.transport.amqp;
 
 import org.mule.api.transport.Connector;
 import org.mule.transport.AbstractConnectorTestCase;
+import org.mule.transport.amqp.AmqpConstants.AckMode;
 
 public class AmqpConnectorTestCase extends AbstractConnectorTestCase
 {
-    /* For general guidelines on writing transports see
-       http://www.mulesoft.org/documentation/display/MULE3USER/Creating+Transports */
-
     @Override
     public Connector createConnector() throws Exception
     {
-        /* IMPLEMENTATION NOTE: Create and initialise an instance of your
-           connector here. Do not actually call the connect method. */
-
-        AmqpConnector connector = new AmqpConnector(muleContext);
+        final AmqpConnector connector = new AmqpConnector(muleContext);
         connector.setName("Test");
-        // TODO Set any additional properties on the connector here
         return connector;
     }
 
     @Override
     public String getTestEndpointURI()
     {
-        // TODO Return a valid endpoint for you transport here
-        throw new UnsupportedOperationException("getTestEndpointURI");
+        return "amqp://target-exchange/target-queue";
     }
 
     @Override
     public Object getValidMessage() throws Exception
     {
-        // TODO Return an valid message for your transport
-        throw new UnsupportedOperationException("getValidMessage");
+        return AmqpMuleMessageFactoryTestCase.getTestMessage();
     }
-
 
     public void testProperties() throws Exception
     {
-        // TODO test setting and retrieving any custom properties on the
-        // Connector as necessary
+        final AmqpConnector amqpConnector = (AmqpConnector) getConnector();
+        amqpConnector.setAckMode(AckMode.MULE_AUTO);
+        assertEquals(AckMode.MULE_AUTO, amqpConnector.getAckMode());
+
+        // TODO add more assertions
+    }
+
+    @Override
+    public void testConnectorLifecycle() throws Exception
+    {
+        // Deactivated because we don't want to start the connector in unit tests
     }
 }

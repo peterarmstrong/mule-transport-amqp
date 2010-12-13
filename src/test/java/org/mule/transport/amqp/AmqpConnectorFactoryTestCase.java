@@ -28,6 +28,6 @@ public class AmqpConnectorFactoryTestCase extends AbstractMuleTestCase
 
     public String getEndpointURI()
     {
-        return "amqp://resource.name";
+        return "amqp://target-exchange/target-queue";
     }
 }

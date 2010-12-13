@@ -36,7 +36,7 @@ public abstract class AmqpConstants
 
     public enum AckMode
     {
-        AUTO(true), MANUAL(false);
+        AMQP_AUTO(true), MULE_AUTO(false), MANUAL(false);
 
         private final boolean autoAck;
 

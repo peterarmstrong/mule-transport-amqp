@@ -18,10 +18,11 @@ public class AmqpEndpointTestCase extends AbstractMuleTestCase
 {
     public void testValidEndpointURI() throws Exception
     {
-        final EndpointURI url = new MuleEndpointURI("amqp://resource.name", muleContext);
+        final EndpointURI url = new MuleEndpointURI("amqp://target-exchange/target-queue", muleContext);
         assertEquals("amqp", url.getScheme());
         // using the host as resource name could be an issue because exchange and queue names accept characters that are
         // invalid in host names: ^[a-zA-Z0-9-_.:]*$
-        assertEquals("resource.name", url.getHost());
+        assertEquals("target-exchange", url.getHost());
+        assertEquals("/target-queue", url.getPath());
     }
 }
