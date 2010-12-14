@@ -85,7 +85,7 @@ public class ObjectToAmqpMessage extends AbstractAmqpMessageToObject
 
     private <T> T getProperty(final MuleMessage message, final String key)
     {
-        return getProperty(message, key, null);
+        return this.<T> getProperty(message, key, null);
     }
 
     private <T> T getProperty(final MuleMessage message, final String key, final T defaultValue)

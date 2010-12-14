@@ -130,9 +130,11 @@
               <xsd:enumeration value="MULE_AUTO">
                 <xsd:annotation>
                   <xsd:documentation>Mule will automatically acknowledge
-                    messages when the flow will have been processed.
-                    Using asynchronous sub-flows or dispatch may lead to
-                    early acknowledgment.
+                    messages when the flow will have been processed, if
+                    no exception has been encountered.
+                    Using asynchronous
+                    sub-flows or dispatch may lead to early
+                    acknowledgment.
                   </xsd:documentation>
                 </xsd:annotation>
               </xsd:enumeration>
@@ -185,7 +187,13 @@
   </xsd:complexType>
 
   <xsd:attributeGroup name="addressAttributes">
-    <xsd:attribute name="exchangeName" type="xsd:string" />
+    <xsd:attribute name="exchangeName" type="xsd:string">
+      <xsd:annotation>
+        <xsd:documentation>
+        Use "_default" for the default exchange.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
     <xsd:attribute name="queueName" type="xsd:string" />
   </xsd:attributeGroup>
 
@@ -201,17 +209,22 @@
         </xsd:restriction>
       </xsd:simpleType>
     </xsd:attribute>
-    <xsd:attribute name="exchangeDurable" type="mule:substitutableBoolean"
-      default="false" />
-    <xsd:attribute name="exchangeAutoDelete" type="mule:substitutableBoolean"
-      default="false" />
-    <xsd:attribute name="queueDurable" type="mule:substitutableBoolean"
-      default="false" />
-    <xsd:attribute name="queueAutoDelete" type="mule:substitutableBoolean"
-      default="false" />
-    <xsd:attribute name="queueExclusive" type="mule:substitutableBoolean"
-      default="false" />
+    <xsd:attribute name="exchangeDurable" type="mule:substitutableBoolean" />
+    <xsd:attribute name="exchangeAutoDelete" type="mule:substitutableBoolean" />
+    <xsd:attribute name="queueDurable" type="mule:substitutableBoolean" />
+    <xsd:attribute name="queueAutoDelete" type="mule:substitutableBoolean" />
+    <xsd:attribute name="queueExclusive" type="mule:substitutableBoolean" />
   </xsd:attributeGroup>
+
+  <xsd:element name="acknowledge-message" type="basicAckType"
+    substitutionGroup="mule:abstract-message-processor" />
+  <xsd:complexType name="basicAckType">
+    <xsd:complexContent>
+      <xsd:extension base="mule:abstractMessageProcessorType">
+        <xsd:attribute name="multiple" type="mule:substitutableBoolean" default="false" />
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
 
   <xsd:element name="amqpmessage-to-object-transformer"
     type="mule:abstractTransformerType" substitutionGroup="mule:abstract-transformer">

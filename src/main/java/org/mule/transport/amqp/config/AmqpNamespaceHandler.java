@@ -16,6 +16,7 @@ import org.mule.config.spring.handlers.AbstractMuleNamespaceHandler;
 import org.mule.config.spring.parsers.AbstractMuleBeanDefinitionParser;
 import org.mule.config.spring.parsers.MuleChildDefinitionParser;
 import org.mule.config.spring.parsers.MuleDefinitionParser;
+import org.mule.config.spring.parsers.assembly.configuration.PrefixValueMap;
 import org.mule.config.spring.parsers.delegate.AbstractSingleParentFamilyDefinitionParser;
 import org.mule.config.spring.parsers.generic.AttributePropertiesDefinitionParser;
 import org.mule.config.spring.parsers.processors.BlockAttribute;
@@ -29,6 +30,8 @@ import org.mule.config.spring.parsers.specific.endpoint.support.OrphanEndpointDe
 import org.mule.endpoint.EndpointURIEndpointBuilder;
 import org.mule.endpoint.URIBuilder;
 import org.mule.transport.amqp.AmqpConnector;
+import org.mule.transport.amqp.AmqpEndpointUtil;
+import org.mule.transport.amqp.AmqpMessageAcknowledger;
 import org.mule.transport.amqp.transformers.AmqpMessageToObject;
 import org.mule.transport.amqp.transformers.ObjectToAmqpMessage;
 
@@ -38,7 +41,7 @@ import org.mule.transport.amqp.transformers.ObjectToAmqpMessage;
  */
 public class AmqpNamespaceHandler extends AbstractMuleNamespaceHandler
 {
-    public static final String[][] AMQP_ENDPOINT_ATTRIBUTES = new String[][]{new String[]{"queueName"},
+    private static final String[][] AMQP_ENDPOINT_ATTRIBUTES = new String[][]{new String[]{"queueName"},
         new String[]{"exchangeName"}, new String[]{"exchangeName", "queueName"}};
 
     public void init()
@@ -51,6 +54,9 @@ public class AmqpNamespaceHandler extends AbstractMuleNamespaceHandler
             new MessageProcessorDefinitionParser(AmqpMessageToObject.class));
         registerBeanDefinitionParser("object-to-amqpmessage-transformer",
             new MessageProcessorDefinitionParser(ObjectToAmqpMessage.class));
+
+        registerBeanDefinitionParser("acknowledge-message", new MessageProcessorDefinitionParser(
+            AmqpMessageAcknowledger.class));
     }
 
     protected void registerAmqpTransportEndpoints()
@@ -81,6 +87,7 @@ public class AmqpNamespaceHandler extends AbstractMuleNamespaceHandler
     {
         parser.addAlias("exchangeName", URIBuilder.HOST);
         parser.addAlias("queueName", URIBuilder.PATH);
+        parser.addMapping("queueName", new PrefixValueMap(AmqpEndpointUtil.QUEUE_PREFIX));
         registerBeanDefinitionParser(element, parser);
     }
 

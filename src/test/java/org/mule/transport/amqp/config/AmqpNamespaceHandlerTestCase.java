@@ -10,13 +10,18 @@
 
 package org.mule.transport.amqp.config;
 
+import java.util.List;
+
 import org.mule.api.endpoint.EndpointBuilder;
-import org.mule.api.endpoint.EndpointURI;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.endpoint.OutboundEndpoint;
+import org.mule.api.processor.MessageProcessor;
+import org.mule.construct.SimpleFlowConstruct;
 import org.mule.tck.FunctionalTestCase;
 import org.mule.transport.amqp.AmqpConnector;
 import org.mule.transport.amqp.AmqpConstants.AckMode;
+import org.mule.transport.amqp.AmqpEndpointUtil;
+import org.mule.transport.amqp.AmqpMessageAcknowledger;
 import org.mule.transport.amqp.transformers.AmqpMessageToObject;
 import org.mule.transport.amqp.transformers.ObjectToAmqpMessage;
 
@@ -52,18 +57,18 @@ public class AmqpNamespaceHandlerTestCase extends FunctionalTestCase
         assertNotNull(endpointBuilder);
 
         final InboundEndpoint inboundEndpoint = endpointBuilder.buildInboundEndpoint();
-        assertEquals("amqp://target-exchange/target-queue", inboundEndpoint.getAddress());
-        final EndpointURI inboundEndpointURI = inboundEndpoint.getEndpointURI();
-        assertEquals("target-exchange", inboundEndpointURI.getHost());
-        assertEquals("/target-queue", inboundEndpointURI.getPath());
-        assertEquals("a.b.c", inboundEndpoint.getProperty("routingKey"));
+        assertEquals("amqp://target-exchange/amqp-queue.target-queue", inboundEndpoint.getAddress());
+        assertEquals("amqp://target-exchange/amqp-queue.target-queue", inboundEndpoint.getEndpointURI()
+            .getAddress());
+        assertEquals("a.b.c", inboundEndpoint.getProperty(AmqpEndpointUtil.ROUTING_KEY));
+        assertEquals("true", inboundEndpoint.getProperty(AmqpEndpointUtil.EXCHANGE_DURABLE));
 
         final OutboundEndpoint outboundEndpoint = endpointBuilder.buildOutboundEndpoint();
-        assertEquals("amqp://target-exchange/target-queue", outboundEndpoint.getAddress());
-        final EndpointURI outboundEndpointURI = outboundEndpoint.getEndpointURI();
-        assertEquals("target-exchange", outboundEndpointURI.getHost());
-        assertEquals("/target-queue", outboundEndpointURI.getPath());
-        assertEquals("a.b.c", outboundEndpoint.getProperty("routingKey"));
+        assertEquals("amqp://target-exchange/amqp-queue.target-queue", outboundEndpoint.getAddress());
+        assertEquals("amqp://target-exchange/amqp-queue.target-queue", outboundEndpoint.getEndpointURI()
+            .getAddress());
+        assertEquals("a.b.c", outboundEndpoint.getProperty(AmqpEndpointUtil.ROUTING_KEY));
+        assertEquals("true", outboundEndpoint.getProperty(AmqpEndpointUtil.EXCHANGE_DURABLE));
         // TODO add more assertions
     }
 
@@ -74,10 +79,8 @@ public class AmqpNamespaceHandlerTestCase extends FunctionalTestCase
         assertNotNull(endpointBuilder);
 
         final InboundEndpoint inboundEndpoint = endpointBuilder.buildInboundEndpoint();
-        assertEquals("amqp://target-queue", inboundEndpoint.getAddress());
-        final EndpointURI inboundEndpointURI = inboundEndpoint.getEndpointURI();
-        assertEquals("target-queue", inboundEndpointURI.getHost());
-        assertEquals("", inboundEndpointURI.getPath());
+        assertEquals("amqp://amqp-queue.target-queue", inboundEndpoint.getAddress());
+        assertEquals("amqp://amqp-queue.target-queue", inboundEndpoint.getEndpointURI().getAddress());
     }
 
     public void testPrivateQueueGlobalEndpoint() throws Exception
@@ -88,9 +91,7 @@ public class AmqpNamespaceHandlerTestCase extends FunctionalTestCase
 
         final InboundEndpoint inboundEndpoint = endpointBuilder.buildInboundEndpoint();
         assertEquals("amqp://target-exchange", inboundEndpoint.getAddress());
-        final EndpointURI inboundEndpointURI = inboundEndpoint.getEndpointURI();
-        assertEquals("target-exchange", inboundEndpointURI.getHost());
-        assertEquals("", inboundEndpointURI.getPath());
+        assertEquals("amqp://target-exchange", inboundEndpoint.getEndpointURI().getAddress());
     }
 
     public void testExistingExchangeGlobalEndpoint() throws Exception
@@ -101,9 +102,7 @@ public class AmqpNamespaceHandlerTestCase extends FunctionalTestCase
 
         final InboundEndpoint inboundEndpoint = endpointBuilder.buildInboundEndpoint();
         assertEquals("amqp://target-exchange", inboundEndpoint.getAddress());
-        final EndpointURI inboundEndpointURI = inboundEndpoint.getEndpointURI();
-        assertEquals("target-exchange", inboundEndpointURI.getHost());
-        assertEquals("", inboundEndpointURI.getPath());
+        assertEquals("amqp://target-exchange", inboundEndpoint.getEndpointURI().getAddress());
     }
 
     // TODO add more tests for other endpoints
@@ -112,5 +111,14 @@ public class AmqpNamespaceHandlerTestCase extends FunctionalTestCase
     {
         assertTrue(muleContext.getRegistry().lookupTransformer("a2o") instanceof AmqpMessageToObject);
         assertTrue(muleContext.getRegistry().lookupTransformer("o2a") instanceof ObjectToAmqpMessage);
+    }
+
+    public void testAcknowledger() throws Exception
+    {
+        final List<MessageProcessor> messageProcessors = ((SimpleFlowConstruct) muleContext.getRegistry()
+            .lookupFlowConstruct("ackerFlow")).getMessageProcessors();
+        assertEquals(1, messageProcessors.size());
+        System.out.println(messageProcessors.get(0));
+        assertTrue(messageProcessors.get(0) instanceof AmqpMessageAcknowledger);
     }
 }

@@ -22,9 +22,11 @@ import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.lifecycle.CreateException;
 import org.mule.api.transport.Connector;
 import org.mule.config.i18n.MessageFactory;
+import org.mule.session.DefaultMuleSession;
 import org.mule.transport.AbstractMessageReceiver;
 import org.mule.transport.ConnectException;
 import org.mule.transport.amqp.AmqpConstants.AckMode;
+import org.mule.util.StringUtils;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -37,7 +39,7 @@ import com.rabbitmq.client.Envelope;
 public class AmqpMessageReceiver extends AbstractMessageReceiver
 {
     private final AmqpConnector amqpConnector;
-    private final String queueName;
+    private String queueName;
 
     private Channel channel;
     private String consumerTag;
@@ -48,9 +50,14 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
     {
         super(connector, flowConstruct, endpoint);
         this.amqpConnector = (AmqpConnector) connector;
+    }
 
-        // FIXME review this
-        this.queueName = endpoint.getEndpointURI().getHost();
+    // FIXME remove whenever possible
+    @Override
+    public String getReceiverKey()
+    {
+        return StringUtils.defaultIfEmpty(endpoint.getEndpointURI().getFilterAddress(),
+            endpoint.getEndpointURI().getAddress());
     }
 
     @Override
@@ -59,17 +66,11 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
         try
         {
             channel = amqpConnector.newChannel();
-
-            // FIXME create exchange if exchange name, type are provided
-            // FIXME if exchange is not recreated but queue binding is asked, declare it passively to ensure its
-            // existence
-            // FIXME if no queue name has been provided, create an anonymous one
-            // FIXME if a queue name has been provided, declare it passively to ensure its existence
-            // FIXME bind queue to exchange if routingKey is provided
+            queueName = AmqpEndpointUtil.getOrCreateQueueFor(channel, getEndpoint());
 
             if (logger.isDebugEnabled())
             {
-                logger.debug("Created channel: " + channel);
+                logger.debug("Using queue: " + queueName + " on channel: " + channel);
             }
         }
         catch (final IOException ioe)
@@ -84,6 +85,11 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
     {
         try
         {
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Closing channel: " + channel);
+            }
+
             channel.close();
 
             if (logger.isDebugEnabled())
@@ -109,8 +115,8 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
     {
         try
         {
-            final String consumerTag = channel.basicConsume(queueName,
-                amqpConnector.getAckMode().isAutoAck(), new DefaultConsumer(channel)
+            consumerTag = channel.basicConsume(queueName, amqpConnector.getAckMode().isAutoAck(),
+                new DefaultConsumer(channel)
                 {
                     @Override
                     public void handleDelivery(final String consumerTag,
@@ -124,10 +130,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
                     }
                 });
 
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("Started subscription: " + consumerTag + " on channel: " + channel);
-            }
+            logger.info("Started subscription: " + consumerTag + " on channel: " + channel);
         }
         catch (final IOException ioe)
         {
@@ -142,12 +145,13 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
     {
         try
         {
-            channel.basicCancel(consumerTag);
-
             if (logger.isDebugEnabled())
             {
-                logger.debug("Cancelled subscription of: " + consumerTag + " on channel: " + channel);
+                logger.debug("Cancelling subscription of: " + consumerTag + " on channel: " + channel);
             }
+
+            channel.basicCancel(consumerTag);
+            logger.info("Cancelled subscription of: " + consumerTag + " on channel: " + channel);
         }
         catch (final IOException ioe)
         {
@@ -187,7 +191,15 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
                 final MuleMessage muleMessage = amqpConnector.getMuleMessageFactory().create(amqpMessage,
                     amqpConnector.getMuleContext().getConfiguration().getDefaultEncoding());
 
-                routeMessage(muleMessage);
+                final DefaultMuleSession muleSession = new DefaultMuleSession(amqpConnector.getMuleContext());
+
+                if (amqpConnector.getAckMode() == AckMode.MANUAL)
+                {
+                    // in manual AckMode, the channel will be needed to ack the message
+                    muleSession.setProperty(AmqpConstants.CHANNEL, channel);
+                }
+
+                routeMessage(muleMessage, muleSession, null, null);
 
                 if (amqpConnector.getAckMode() == AckMode.MULE_AUTO)
                 {

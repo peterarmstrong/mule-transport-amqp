@@ -51,5 +51,8 @@
                  exchangeType="topic"
                  exchangeDurable="true"
                  exchangeAutoDelete="false" />
-                 
+  
+  <flow name="ackerFlow">
+    <amqp:acknowledge-message multiple="true" />
+  </flow>
 </mule>

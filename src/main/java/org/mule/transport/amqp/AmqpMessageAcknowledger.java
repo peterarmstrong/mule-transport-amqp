@@ -29,9 +29,9 @@ import com.rabbitmq.client.Channel;
  */
 public class AmqpMessageAcknowledger implements MessageProcessor
 {
-    protected final static Log LOG = LogFactory.getLog(AmqpMessageAcknowledger.class);
+    private final static Log LOG = LogFactory.getLog(AmqpMessageAcknowledger.class);
 
-    private boolean multiple = false;
+    protected boolean multiple = false;
 
     @Override
     public MuleEvent process(final MuleEvent event) throws MuleException
