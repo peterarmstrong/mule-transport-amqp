@@ -34,7 +34,7 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 
 /**
- * <code>AmqpMessageReceiver</code> TODO document
+ * The <code>AmqpMessageReceiver</code> subscribes to a queue and dispatches received messages to Mule.
  */
 public class AmqpMessageReceiver extends AbstractMessageReceiver
 {
