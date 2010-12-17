@@ -7,9 +7,6 @@
        http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/3.1/mule-amqp.xsd
        http://www.mulesoft.org/schema/mule/test http://www.mulesoft.org/schema/mule/test/3.1/mule-test.xsd">
 
-  <amqp:amqpmessage-to-object-transformer name="a2o" />
-  <amqp:object-to-amqpmessage-transformer name="o2a" />
-
   <amqp:connector name="amqpAutoAckLocalhostConnector"
                   virtualHost="mule-test"
                   username="mule"

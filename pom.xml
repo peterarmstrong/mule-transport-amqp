@@ -12,7 +12,7 @@
   <url>http://www.muleforge.org/projects/AMQP</url>
 
   <properties>
-    <mule.version>3.1.0-SNAPSHOT</mule.version>
+    <mule.version>3.1.1-SNAPSHOT</mule.version>
     <!-- Tools properties -->
     <eclipsePluginVersion>2.5</eclipsePluginVersion>
     <vmtype>org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType</vmtype>

@@ -1,13 +1,22 @@
 
 package org.mule.transport.amqp;
 
+import java.util.Arrays;
 import java.util.Collections;
 
+import org.apache.commons.lang.RandomStringUtils;
+import org.mule.api.MuleEventContext;
 import org.mule.tck.FunctionalTestCase;
+import org.mule.tck.functional.EventCallback;
+import org.mule.tck.functional.FunctionalTestComponent;
+import org.mule.util.concurrent.Latch;
 
+import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+
+import edu.emory.mathcs.backport.java.util.concurrent.TimeUnit;
 
 public class AmqpMessageReceiverITCase extends FunctionalTestCase
 {
@@ -26,10 +35,10 @@ public class AmqpMessageReceiverITCase extends FunctionalTestCase
         conn = factory.newConnection();
         channel = conn.createChannel();
 
-        // declare an fanout exchange an bind a queue to it
+        // declare an fanout exchange and bind a queue to it
         channel.exchangeDeclare(PRE_EXISTING_EXCHANGE, "fanout");
         channel.queueDeclare(PRE_EXISTING_QUEUE, false, false, true, Collections.<String, Object> emptyMap());
-
+        channel.queueBind(PRE_EXISTING_QUEUE, PRE_EXISTING_EXCHANGE, "");
     }
 
     @Override
@@ -47,17 +56,29 @@ public class AmqpMessageReceiverITCase extends FunctionalTestCase
 
     public void testExistingQueue() throws Exception
     {
-        // FIXME re-activate test when transport is able of clean shutdown
+        final Latch messageReceivedLatch = new Latch();
+        final FunctionalTestComponent functionalTestComponent = getFunctionalTestComponent("amqpExistingQueueService");
+        functionalTestComponent.setEventCallback(new EventCallback()
+        {
+            @Override
+            public void eventReceived(final MuleEventContext context, final Object component)
+                throws Exception
+            {
+                messageReceivedLatch.release();
+            }
+        });
 
-        // final FunctionalTestComponent functionalTestComponent =
-        // getFunctionalTestComponent("amqpExistingQueueService");
-        // final byte[] body = RandomStringUtils.randomAlphanumeric(20).getBytes();
-        // final BasicProperties props = new BasicProperties();
-        // props.setContentType("text/plain");
-        // props.setHeaders(Collections.<String, Object> singletonMap("customHeader", 123L));
-        // channel.basicPublish(PRE_EXISTING_EXCHANGE, "ignored", props, body);
+        final byte[] body = RandomStringUtils.randomAlphanumeric(20).getBytes();
+        final BasicProperties props = new BasicProperties();
+        props.setContentType("text/plain");
+        props.setHeaders(Collections.<String, Object> singletonMap("customHeader", 123L));
+        channel.basicPublish(PRE_EXISTING_EXCHANGE, "ignored", props, body);
 
-        // temporary: wait 1s and stop
-        Thread.sleep(1000L);
+        messageReceivedLatch.await(30, TimeUnit.SECONDS);
+
+        assertEquals(1, functionalTestComponent.getReceivedMessagesCount());
+        final Object lastReceivedMessage = functionalTestComponent.getLastReceivedMessage();
+        assertTrue(lastReceivedMessage instanceof byte[]);
+        assertTrue(Arrays.equals(body, (byte[]) lastReceivedMessage));
     }
 }

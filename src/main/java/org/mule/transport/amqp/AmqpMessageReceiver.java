@@ -126,6 +126,12 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
                     {
                         final AmqpMessage amqpMessage = new AmqpMessage(consumerTag, envelope, properties,
                             body);
+
+                        if (logger.isDebugEnabled())
+                        {
+                            logger.debug("Received: " + amqpMessage);
+                        }
+
                         deliverAmqpMessage(amqpMessage);
                     }
                 });
@@ -143,6 +149,13 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
     @Override
     public void doStop()
     {
+        // FIXME remove when http://www.mulesoft.org/jira/browse/MULE-5290 is fixed
+        if (!channel.isOpen())
+        {
+            logger.warn("Attempting to stop a subscription on a closed channel (probably due to http://www.mulesoft.org/jira/browse/MULE-5290)");
+            return;
+        }
+
         try
         {
             if (logger.isDebugEnabled())
