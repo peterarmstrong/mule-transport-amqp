@@ -21,8 +21,8 @@ import org.mule.api.construct.FlowConstruct;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.lifecycle.CreateException;
 import org.mule.api.transport.Connector;
+import org.mule.api.transport.PropertyScope;
 import org.mule.config.i18n.MessageFactory;
-import org.mule.session.DefaultMuleSession;
 import org.mule.transport.AbstractMessageReceiver;
 import org.mule.transport.ConnectException;
 import org.mule.transport.amqp.AmqpConstants.AckMode;
@@ -52,7 +52,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
         this.amqpConnector = (AmqpConnector) connector;
     }
 
-    // FIXME remove whenever possible
+    // FIXME remove when http://www.mulesoft.org/jira/browse/MULE-5288 is fixed
     @Override
     public String getReceiverKey()
     {
@@ -163,7 +163,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
 
     private void deliverAmqpMessage(final AmqpMessage amqpMessage)
     {
-        // deliver message in a different thread to avoid locking over the channel's thread.
+        // deliver message in a different thread to free the connector's thread
         try
         {
             getWorkManager().scheduleWork(new AmqpMessageRouterWork(amqpMessage));
@@ -191,22 +191,26 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
                 final MuleMessage muleMessage = amqpConnector.getMuleMessageFactory().create(amqpMessage,
                     amqpConnector.getMuleContext().getConfiguration().getDefaultEncoding());
 
-                final DefaultMuleSession muleSession = new DefaultMuleSession(amqpConnector.getMuleContext());
-
                 if (amqpConnector.getAckMode() == AckMode.MANUAL)
                 {
                     // in manual AckMode, the channel will be needed to ack the message
-                    muleSession.setProperty(AmqpConstants.CHANNEL, channel);
+                    muleMessage.setProperty(AmqpConstants.CHANNEL, channel, PropertyScope.INVOCATION);
                 }
 
-                routeMessage(muleMessage, muleSession, null, null);
-
-                if (amqpConnector.getAckMode() == AckMode.MULE_AUTO)
+                try
                 {
-                    channel.basicAck(amqpMessage.getEnvelope().getDeliveryTag(), false);
-                    if (logger.isDebugEnabled())
+                    routeMessage(muleMessage);
+                }
+                finally
+                {
+                    if (amqpConnector.getAckMode() == AckMode.MULE_AUTO)
                     {
-                        logger.debug("Mule acknowledged message: " + amqpMessage + " on channel: " + channel);
+                        channel.basicAck(amqpMessage.getEnvelope().getDeliveryTag(), false);
+                        if (logger.isDebugEnabled())
+                        {
+                            logger.debug("Mule acknowledged message: " + amqpMessage + " on channel: "
+                                         + channel);
+                        }
                     }
                 }
             }

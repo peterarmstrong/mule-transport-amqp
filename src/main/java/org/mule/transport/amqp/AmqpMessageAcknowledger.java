@@ -18,6 +18,7 @@ import org.mule.api.MuleEvent;
 import org.mule.api.MuleException;
 import org.mule.api.model.SessionException;
 import org.mule.api.processor.MessageProcessor;
+import org.mule.api.transport.PropertyScope;
 import org.mule.config.i18n.MessageFactory;
 
 import com.rabbitmq.client.Channel;
@@ -33,7 +34,6 @@ public class AmqpMessageAcknowledger implements MessageProcessor
 
     protected boolean multiple = false;
 
-    @Override
     public MuleEvent process(final MuleEvent event) throws MuleException
     {
         final Long deliveryTag = event.getMessage().getInboundProperty(AmqpConstants.DELIVERY_TAG);
@@ -45,7 +45,8 @@ public class AmqpMessageAcknowledger implements MessageProcessor
             return event;
         }
 
-        final Channel channel = event.getSession().getProperty(AmqpConstants.CHANNEL);
+        final Channel channel = event.getMessage().getProperty(AmqpConstants.CHANNEL,
+            PropertyScope.INVOCATION);
 
         if (channel == null)
         {
