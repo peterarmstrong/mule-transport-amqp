@@ -12,13 +12,56 @@
                   username="mule"
                   password="elum" />
 
-  <!-- Use an existing queue -->
-  <amqp:endpoint name="amqpExistingQueueGlobalEndpoint"
-                 queueName="pre-existing-queue"
-                 connector-ref="amqpAutoAckLocalhostConnector" />
-
   <flow name="amqpExistingQueueService">
-    <inbound-endpoint ref="amqpExistingQueueGlobalEndpoint" />
+    <!-- Use an existing queue -->
+    <amqp:inbound-endpoint queueName="amqpExistingQueueService-queue"
+                           connector-ref="amqpAutoAckLocalhostConnector" />
+    <test:component />
+  </flow>
+  
+  <flow name="amqpServerNamedQueueExistingExchangeService">
+    <!-- Create a private exclusive server-named queue and bind it to an existing exchange  --> 
+    <amqp:inbound-endpoint exchangeName="amqpServerNamedQueueExistingExchangeService-exchange"
+                           connector-ref="amqpAutoAckLocalhostConnector" />
+    <test:component />
+  </flow>
+  
+  <flow name="amqpNewQueueExistingExchangeService">
+    <!-- Create a new queue and bind it to an existing exchange  --> 
+    <amqp:inbound-endpoint exchangeName="amqpNewQueueExistingExchangeService-exchange"
+                           queueName="amqpNewQueueExistingExchangeService-queue"
+                           queueDurable="false"
+                           queueExclusive="false"
+                           queueAutoDelete="true"
+                           connector-ref="amqpAutoAckLocalhostConnector" />
+    <test:component />
+  </flow>
+  
+  <flow name="amqpNewQueueRedeclaredExistingExchangeService">
+    <!-- Create a new queue and bind it to an existing exchange re-declared in Mule to ensure presense --> 
+    <amqp:inbound-endpoint exchangeName="amqpNewQueueRedeclaredExistingExchangeService-exchange"
+                           exchangeType="fanout"
+                           exchangeAutoDelete="false"
+                           exchangeDurable="false"
+                           queueName="amqpNewQueueRedeclaredExistingExchangeService-queue"
+                           queueDurable="false"
+                           queueExclusive="false"
+                           queueAutoDelete="true"
+                           connector-ref="amqpAutoAckLocalhostConnector" />
+    <test:component />
+  </flow>
+  
+  <flow name="amqpNewQueueNewExchangeService">
+    <!-- Create a new queue and bind it to a new exchange  --> 
+    <amqp:inbound-endpoint exchangeName="amqpNewQueueNewExchangeService-exchange"
+                           exchangeType="fanout"
+                           exchangeAutoDelete="true"
+                           exchangeDurable="false"
+                           queueName="amqpNewQueueNewExchangeService-queue"
+                           queueDurable="false"
+                           queueExclusive="false"
+                           queueAutoDelete="true"
+                           connector-ref="amqpAutoAckLocalhostConnector" />
     <test:component />
   </flow>
 </mule>

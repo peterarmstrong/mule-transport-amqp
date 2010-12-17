@@ -27,7 +27,7 @@ import com.rabbitmq.client.Channel;
 
 public abstract class AmqpEndpointUtil
 {
-    private static final String DEFAULT_EXCHANGE = "_default";
+    private static final String DEFAULT_EXCHANGE = "DEFAULT";
 
     private static final Map<String, Object> NO_ARGS = Collections.<String, Object> emptyMap();
 
@@ -48,10 +48,10 @@ public abstract class AmqpEndpointUtil
     public static String getOrCreateQueueFor(final Channel channel, final InboundEndpoint inboundEndpoint)
         throws IOException
     {
-        final String exchangeName = StringUtils.substringBetween(inboundEndpoint.getAddress(),
-            AmqpConnector.AMQP + "://", QUEUE_PREFIX);
-        final String queueName = StringUtils.substringAfter(inboundEndpoint.getAddress(), QUEUE_PREFIX);
-        final String routingKey = (String) inboundEndpoint.getProperty(ROUTING_KEY);
+        final String inboundEndpointAddress = inboundEndpoint.getAddress();
+        final String exchangeName = getExchangeName(inboundEndpointAddress);
+        final String queueName = getQueueName(inboundEndpointAddress);
+        final String routingKey = StringUtils.defaultString((String) inboundEndpoint.getProperty(ROUTING_KEY));
 
         if (StringUtils.isBlank(exchangeName))
         {
@@ -101,6 +101,7 @@ public abstract class AmqpEndpointUtil
         }
 
         String queueNameInUse = queueName;
+        boolean queueNeedsBinding = false;
 
         if (StringUtils.isBlank(queueName))
         {
@@ -108,6 +109,7 @@ public abstract class AmqpEndpointUtil
             final DeclareOk queueDeclareResult = channel.queueDeclare();
 
             queueNameInUse = queueDeclareResult.getQueue();
+            queueNeedsBinding = true;
             LOG.info("Declared private queue: " + queueNameInUse);
         }
         else
@@ -124,6 +126,7 @@ public abstract class AmqpEndpointUtil
                 final boolean queueAutoDelete = BooleanUtils.toBoolean((String) inboundEndpoint.getProperty(QUEUE_AUTO_DELETE));
 
                 channel.queueDeclare(queueName, queueDurable, queueExclusive, queueAutoDelete, NO_ARGS);
+                queueNeedsBinding = true;
 
                 LOG.info("Declared queue: " + queueName + ", durable: " + queueDurable + ", exclusive: "
                          + queueExclusive + ", autoDelete: " + queueAutoDelete);
@@ -140,9 +143,9 @@ public abstract class AmqpEndpointUtil
             }
         }
 
-        if (StringUtils.isNotBlank(routingKey))
+        if (queueNeedsBinding)
         {
-            // routing provided -> bind queue to exchange (we have previously enforced exchange name to be non blank)
+            // bind queue to exchange (we have previously enforced exchange name to be non blank)
             channel.queueBind(queueNameInUse, exchangeName, routingKey);
 
             LOG.info("Bound queue: " + queueNameInUse + " to exchange: " + exchangeName
@@ -150,5 +153,25 @@ public abstract class AmqpEndpointUtil
         }
 
         return queueNameInUse;
+    }
+
+    static String getQueueName(final String inboundEndpointAddress)
+    {
+        return StringUtils.defaultString(StringUtils.substringAfter(inboundEndpointAddress, QUEUE_PREFIX));
+    }
+
+    static String getExchangeName(final String inboundEndpointAddress)
+    {
+        final String exchangeName = StringUtils.defaultString(
+            StringUtils.substringBetween(inboundEndpointAddress, AmqpConnector.AMQP + "://", "/"
+                                                                                             + QUEUE_PREFIX),
+            StringUtils.substringAfter(inboundEndpointAddress, AmqpConnector.AMQP + "://"));
+
+        if (exchangeName.startsWith(QUEUE_PREFIX))
+        {
+            return StringUtils.EMPTY;
+        }
+
+        return exchangeName;
     }
 }
