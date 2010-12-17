@@ -69,7 +69,8 @@ public class AmqpMessageAcknowledger implements MessageProcessor
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Mule acknowledged message w/deliveryTag: " + deliveryTag + " on channel: " + channel);
+            LOG.debug("Manually acknowledged message w/deliveryTag: " + deliveryTag + " on channel: "
+                      + channel);
         }
 
         return event;

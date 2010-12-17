@@ -11,6 +11,18 @@
                   virtualHost="mule-test"
                   username="mule"
                   password="elum" />
+                  
+  <amqp:connector name="amqpMuleAckLocalhostConnector"
+                  virtualHost="mule-test"
+                  username="mule"
+                  password="elum"
+                  ackMode="MULE_AUTO" />
+                  
+  <amqp:connector name="amqpManualAckLocalhostConnector"
+                  virtualHost="mule-test"
+                  username="mule"
+                  password="elum"
+                  ackMode="MANUAL" />
 
   <flow name="amqpExistingQueueService">
     <!-- Use an existing queue -->
@@ -64,4 +76,20 @@
                            connector-ref="amqpAutoAckLocalhostConnector" />
     <test:component />
   </flow>
+
+  <flow name="amqpMuleAckService">
+    <!-- Test the Mule-driven acknowledgment of messages -->
+    <amqp:inbound-endpoint queueName="amqpMuleAckService-queue"
+                           connector-ref="amqpMuleAckLocalhostConnector" />
+    <test:component />
+  </flow>
+
+  <flow name="amqpManualAckService">
+    <!-- Test the Mule-driven acknowledgment of messages -->
+    <amqp:inbound-endpoint queueName="amqpManualAckService-queue"
+                           connector-ref="amqpManualAckLocalhostConnector" />
+    <test:component />
+    <amqp:acknowledge-message />
+  </flow>
+  
 </mule>

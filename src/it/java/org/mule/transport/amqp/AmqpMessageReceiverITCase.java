@@ -46,6 +46,8 @@ public class AmqpMessageReceiverITCase extends FunctionalTestCase
         setupExchangeForFlow("amqpServerNamedQueueExistingExchangeService");
         setupExchangeForFlow("amqpNewQueueExistingExchangeService");
         setupExchangeForFlow("amqpNewQueueRedeclaredExistingExchangeService");
+        setupExchangeAndQueueForFlow("amqpMuleAckService");
+        setupExchangeAndQueueForFlow("amqpManualAckService");
     }
 
     @Override
@@ -90,6 +92,16 @@ public class AmqpMessageReceiverITCase extends FunctionalTestCase
     public void testNewQueueNewExchange() throws Exception
     {
         dispatchTestMessageAndAssertValidReceivedMessage("amqpNewQueueNewExchangeService");
+    }
+
+    public void testMuleAcknowledgment() throws Exception
+    {
+        dispatchTestMessageAndAssertValidReceivedMessage("amqpMuleAckService");
+    }
+
+    public void testManualAcknowledgment() throws Exception
+    {
+        dispatchTestMessageAndAssertValidReceivedMessage("amqpManualAckService");
     }
 
     private void dispatchTestMessageAndAssertValidReceivedMessage(final String flowName)
