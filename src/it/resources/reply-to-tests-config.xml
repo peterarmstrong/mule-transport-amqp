@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp"
+  xmlns:test="http://www.mulesoft.org/schema/mule/test"
+  xsi:schemaLocation="
+       http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.1/mule.xsd
+       http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/3.1/mule-amqp.xsd
+       http://www.mulesoft.org/schema/mule/test http://www.mulesoft.org/schema/mule/test/3.1/mule-test.xsd">
+
+  <amqp:connector name="amqpAutoAckLocalhostConnector"
+                  virtualHost="mule-test"
+                  username="mule"
+                  password="elum" />
+
+  <flow name="amqpReplierService">
+    <amqp:inbound-endpoint exchangeName="amqpReplierService-exchange"
+                           exchangeType="fanout"
+                           exchangeAutoDelete="false"
+                           exchangeDurable="false"
+                           queueName="amqpReplierService-queue"
+                           queueDurable="false"
+                           queueExclusive="false"
+                           queueAutoDelete="true"
+                           connector-ref="amqpAutoAckLocalhostConnector" />
+    <test:component appendString="-reply" />
+  </flow>
+  
+  <flow name="amqpReplyTargetService">
+    <amqp:inbound-endpoint exchangeName="amqpReplyTargetService-exchange"
+                           exchangeType="fanout"
+                           exchangeAutoDelete="false"
+                           exchangeDurable="false"
+                           queueName="amqpReplyTargetService-queue"
+                           queueDurable="false"
+                           queueExclusive="false"
+                           queueAutoDelete="true"
+                           connector-ref="amqpAutoAckLocalhostConnector" />
+    <test:component />
+  </flow>
+</mule>

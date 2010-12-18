@@ -143,10 +143,17 @@ public abstract class AbstractAmqpITCase extends FunctionalTestCase
 
     protected String dispatchTestMessage(final byte[] body, final String flowName) throws IOException
     {
+        return dispatchTestMessage(body, flowName, null);
+    }
+
+    protected String dispatchTestMessage(final byte[] body, final String flowName, final String replyTo)
+        throws IOException
+    {
         final String correlationId = UUID.getUUID();
         final BasicProperties props = new BasicProperties();
         props.setContentType("text/plain");
         props.setCorrelationId(correlationId);
+        props.setReplyTo(replyTo);
         props.setHeaders(Collections.<String, Object> singletonMap("customHeader", 123L));
         channel.basicPublish(getExchangeName(flowName), "", props, body);
         return correlationId;

@@ -14,8 +14,10 @@ import java.io.IOException;
 
 import org.mule.api.MuleContext;
 import org.mule.api.MuleException;
+import org.mule.api.endpoint.ImmutableEndpoint;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.lifecycle.InitialisationException;
+import org.mule.api.transport.ReplyToHandler;
 import org.mule.config.i18n.MessageFactory;
 import org.mule.transport.AbstractConnector;
 import org.mule.transport.ConnectException;
@@ -167,6 +169,12 @@ public class AmqpConnector extends AbstractConnector
             throw new ConnectException(MessageFactory.createStaticMessage("Error when closing channel: "
                                                                           + channel), ioe, this);
         }
+    }
+
+    @Override
+    public ReplyToHandler getReplyToHandler(final ImmutableEndpoint endpoint)
+    {
+        return new AmqpReplyToHandler(this);
     }
 
     public String getProtocol()
