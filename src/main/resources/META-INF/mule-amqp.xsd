@@ -190,7 +190,7 @@
     <xsd:attribute name="exchangeName" type="xsd:string">
       <xsd:annotation>
         <xsd:documentation>
-        Use "DEFAULT" for the default exchange.
+        Leave blank or omit for the default exchange.
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>

@@ -16,6 +16,7 @@ import org.mule.api.MuleContext;
 import org.mule.api.MuleException;
 import org.mule.api.endpoint.ImmutableEndpoint;
 import org.mule.api.endpoint.InboundEndpoint;
+import org.mule.api.endpoint.OutboundEndpoint;
 import org.mule.api.lifecycle.InitialisationException;
 import org.mule.api.transport.ReplyToHandler;
 import org.mule.config.i18n.MessageFactory;
@@ -53,10 +54,24 @@ public class AmqpConnector extends AbstractConnector
         public final Channel channel;
         public final String queue;
 
-        public InboundConnection(final Channel channel, final String queue)
+        private InboundConnection(final Channel channel, final String queue)
         {
             this.channel = channel;
             this.queue = queue;
+        }
+    }
+
+    public static class OutboundConnection
+    {
+        public final Channel channel;
+        public final String exchange;
+        public final String routingKey;
+
+        private OutboundConnection(final Channel channel, final String exchange, final String routingKey)
+        {
+            this.channel = channel;
+            this.exchange = exchange;
+            this.routingKey = routingKey;
         }
     }
 
@@ -112,19 +127,32 @@ public class AmqpConnector extends AbstractConnector
         try
         {
             final Channel channel = connection.createChannel();
-            final String queueName = AmqpEndpointUtil.getOrCreateQueueFor(channel, inboundEndpoint);
-
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("Using queue: " + queueName + " on channel: " + channel);
-            }
-
+            final String queueName = AmqpEndpointUtil.getOrCreateQueue(channel, inboundEndpoint);
             return new InboundConnection(channel, queueName);
         }
         catch (final IOException ioe)
         {
-            throw new ConnectException(MessageFactory.createStaticMessage("Error when opening new channel"),
-                ioe, this);
+            throw new ConnectException(
+                MessageFactory.createStaticMessage("Error when connecting inbound endpoint: "
+                                                   + inboundEndpoint), ioe, this);
+        }
+    }
+
+    public OutboundConnection connect(final OutboundEndpoint outboundEndpoint) throws ConnectException
+    {
+        try
+        {
+            final Channel channel = connection.createChannel();
+            final String routingKey = AmqpEndpointUtil.getRoutingKey(outboundEndpoint);
+            final String exchange = AmqpEndpointUtil.getOrCreateExchange(channel, outboundEndpoint);
+
+            return new OutboundConnection(channel, exchange, routingKey);
+        }
+        catch (final IOException ioe)
+        {
+            throw new ConnectException(
+                MessageFactory.createStaticMessage("Error when connecting outbound endpoint: "
+                                                   + outboundEndpoint), ioe, this);
         }
     }
 

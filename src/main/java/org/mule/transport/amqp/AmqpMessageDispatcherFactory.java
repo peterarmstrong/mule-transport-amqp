@@ -10,22 +10,18 @@
 
 package org.mule.transport.amqp;
 
-import org.mule.transport.AbstractMessageDispatcherFactory;
 import org.mule.api.MuleException;
 import org.mule.api.endpoint.OutboundEndpoint;
 import org.mule.api.transport.MessageDispatcher;
+import org.mule.transport.AbstractMessageDispatcherFactory;
 
 /**
- * <code>AmqpMessageDispatcherFactory</code> Todo document
+ * Creates instances of <code>AmqpMessageDispatcherFactory</code>.
  */
-
 public class AmqpMessageDispatcherFactory extends AbstractMessageDispatcherFactory
 {
-    /* For general guidelines on writing transports see
-       http://www.mulesoft.org/documentation/display/MULE3USER/Creating+Transports */
-
     @Override
-    public MessageDispatcher create(OutboundEndpoint endpoint) throws MuleException
+    public MessageDispatcher create(final OutboundEndpoint endpoint) throws MuleException
     {
         return new AmqpMessageDispatcher(endpoint);
     }
