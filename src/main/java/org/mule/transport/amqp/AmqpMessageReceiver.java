@@ -25,6 +25,7 @@ import org.mule.api.transport.PropertyScope;
 import org.mule.config.i18n.MessageFactory;
 import org.mule.transport.AbstractMessageReceiver;
 import org.mule.transport.ConnectException;
+import org.mule.transport.amqp.AmqpConnector.InboundConnection;
 import org.mule.transport.amqp.AmqpConstants.AckMode;
 import org.mule.util.StringUtils;
 
@@ -38,11 +39,9 @@ import com.rabbitmq.client.Envelope;
  */
 public class AmqpMessageReceiver extends AbstractMessageReceiver
 {
-    private final AmqpConnector amqpConnector;
-    private String queueName;
-
-    private Channel channel;
-    private String consumerTag;
+    protected final AmqpConnector amqpConnector;
+    protected InboundConnection inboundConnection;
+    protected String consumerTag;
 
     public AmqpMessageReceiver(final Connector connector,
                                final FlowConstruct flowConstruct,
@@ -63,51 +62,19 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
     @Override
     public void doConnect() throws ConnectException
     {
-        try
-        {
-            channel = amqpConnector.newChannel();
-            queueName = AmqpEndpointUtil.getOrCreateQueueFor(channel, getEndpoint());
-
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("Using queue: " + queueName + " on channel: " + channel);
-            }
-        }
-        catch (final IOException ioe)
-        {
-            throw new ConnectException(MessageFactory.createStaticMessage("Error when opening new channel"),
-                ioe, this);
-        }
+        inboundConnection = amqpConnector.connect(getEndpoint());
     }
 
     @Override
     public void doDisconnect() throws ConnectException
     {
-        try
-        {
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("Closing channel: " + channel);
-            }
-
-            channel.close();
-
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("Closed channel: " + channel);
-            }
-        }
-        catch (final IOException ioe)
-        {
-            throw new ConnectException(MessageFactory.createStaticMessage("Error when closing channel: "
-                                                                          + channel), ioe, this);
-        }
+        amqpConnector.closeChannel(getChannel());
     }
 
     @Override
     public void doDispose()
     {
-        channel = null;
+        inboundConnection = null;
     }
 
     @Override
@@ -115,8 +82,8 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
     {
         try
         {
-            consumerTag = channel.basicConsume(queueName, amqpConnector.getAckMode().isAutoAck(),
-                new DefaultConsumer(channel)
+            consumerTag = getChannel().basicConsume(getQueueName(), amqpConnector.getAckMode().isAutoAck(),
+                new DefaultConsumer(getChannel())
                 {
                     @Override
                     public void handleDelivery(final String consumerTag,
@@ -136,13 +103,13 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
                     }
                 });
 
-            logger.info("Started subscription: " + consumerTag + " on channel: " + channel);
+            logger.info("Started subscription: " + consumerTag + " on channel: " + getChannel());
         }
         catch (final IOException ioe)
         {
             throw new MuleRuntimeException(
-                MessageFactory.createStaticMessage("Error when subscribing to queue: " + queueName
-                                                   + " on channel: " + channel), ioe);
+                MessageFactory.createStaticMessage("Error when subscribing to queue: " + getQueueName()
+                                                   + " on channel: " + getChannel()), ioe);
         }
     }
 
@@ -150,7 +117,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
     public void doStop()
     {
         // FIXME remove when http://www.mulesoft.org/jira/browse/MULE-5290 is fixed
-        if (!channel.isOpen())
+        if (!getChannel().isOpen())
         {
             logger.warn("Attempting to stop a subscription on a closed channel (probably due to http://www.mulesoft.org/jira/browse/MULE-5290)");
             return;
@@ -160,18 +127,28 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
         {
             if (logger.isDebugEnabled())
             {
-                logger.debug("Cancelling subscription of: " + consumerTag + " on channel: " + channel);
+                logger.debug("Cancelling subscription of: " + consumerTag + " on channel: " + getChannel());
             }
 
-            channel.basicCancel(consumerTag);
-            logger.info("Cancelled subscription of: " + consumerTag + " on channel: " + channel);
+            getChannel().basicCancel(consumerTag);
+            logger.info("Cancelled subscription of: " + consumerTag + " on channel: " + getChannel());
         }
         catch (final IOException ioe)
         {
             throw new MuleRuntimeException(
                 MessageFactory.createStaticMessage("Error when cancelling subscription: " + consumerTag
-                                                   + " on channel: " + channel), ioe);
+                                                   + " on channel: " + getChannel()), ioe);
         }
+    }
+
+    protected Channel getChannel()
+    {
+        return inboundConnection == null ? null : inboundConnection.channel;
+    }
+
+    protected String getQueueName()
+    {
+        return inboundConnection == null ? null : inboundConnection.queue;
     }
 
     private void deliverAmqpMessage(final AmqpMessage amqpMessage)
@@ -179,7 +156,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
         // deliver message in a different thread to free the connector's thread
         try
         {
-            getWorkManager().scheduleWork(new AmqpMessageRouterWork(amqpMessage));
+            getWorkManager().scheduleWork(new AmqpMessageRouterWork(getChannel(), amqpMessage));
         }
         catch (final WorkException we)
         {
@@ -190,10 +167,12 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
 
     private final class AmqpMessageRouterWork implements Work
     {
+        private final Channel channel;
         private final AmqpMessage amqpMessage;
 
-        private AmqpMessageRouterWork(final AmqpMessage amqpMessage)
+        private AmqpMessageRouterWork(final Channel channel, final AmqpMessage amqpMessage)
         {
+            this.channel = channel;
             this.amqpMessage = amqpMessage;
         }
 
@@ -216,15 +195,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
                 }
                 finally
                 {
-                    if (amqpConnector.getAckMode() == AckMode.MULE_AUTO)
-                    {
-                        channel.basicAck(amqpMessage.getEnvelope().getDeliveryTag(), false);
-                        if (logger.isDebugEnabled())
-                        {
-                            logger.debug("Mule acknowledged message: " + amqpMessage + " on channel: "
-                                         + channel);
-                        }
-                    }
+                    amqpConnector.ackMessageIfNecessary(channel, amqpMessage);
                 }
             }
             catch (final Exception e)

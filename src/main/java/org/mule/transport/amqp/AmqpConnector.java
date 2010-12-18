@@ -14,8 +14,11 @@ import java.io.IOException;
 
 import org.mule.api.MuleContext;
 import org.mule.api.MuleException;
+import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.lifecycle.InitialisationException;
+import org.mule.config.i18n.MessageFactory;
 import org.mule.transport.AbstractConnector;
+import org.mule.transport.ConnectException;
 import org.mule.transport.amqp.AmqpConstants.AckMode;
 import org.mule.transport.amqp.AmqpConstants.DeliveryMode;
 
@@ -41,6 +44,19 @@ public class AmqpConnector extends AbstractConnector
 
     private ConnectionFactory connectionFactory;
     private Connection connection;
+
+    public static class InboundConnection
+    {
+        // no getter -> get over it
+        public final Channel channel;
+        public final String queue;
+
+        public InboundConnection(final Channel channel, final String queue)
+        {
+            this.channel = channel;
+            this.queue = queue;
+        }
+    }
 
     public AmqpConnector(final MuleContext context)
     {
@@ -89,9 +105,68 @@ public class AmqpConnector extends AbstractConnector
         // NOOP
     }
 
-    public Channel newChannel() throws IOException
+    public InboundConnection connect(final InboundEndpoint inboundEndpoint) throws ConnectException
     {
-        return connection.createChannel();
+        try
+        {
+            final Channel channel = connection.createChannel();
+            final String queueName = AmqpEndpointUtil.getOrCreateQueueFor(channel, inboundEndpoint);
+
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Using queue: " + queueName + " on channel: " + channel);
+            }
+
+            return new InboundConnection(channel, queueName);
+        }
+        catch (final IOException ioe)
+        {
+            throw new ConnectException(MessageFactory.createStaticMessage("Error when opening new channel"),
+                ioe, this);
+        }
+    }
+
+    public void ackMessageIfNecessary(final Channel channel, final AmqpMessage amqpMessage)
+        throws IOException
+    {
+        if (getAckMode() == AckMode.MULE_AUTO)
+        {
+            channel.basicAck(amqpMessage.getEnvelope().getDeliveryTag(), false);
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Mule acknowledged message: " + amqpMessage + " on channel: " + channel);
+            }
+        }
+    }
+
+    public void closeChannel(final Channel channel) throws ConnectException
+    {
+        // FIXME remove when http://www.mulesoft.org/jira/browse/MULE-5290 is fixed
+        if (!channel.isOpen())
+        {
+            logger.warn("Attempting to close an already closed channel (probably due to http://www.mulesoft.org/jira/browse/MULE-5290)");
+            return;
+        }
+
+        try
+        {
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Closing channel: " + channel);
+            }
+
+            channel.close();
+
+            if (logger.isDebugEnabled())
+            {
+                logger.debug("Closed channel: " + channel);
+            }
+        }
+        catch (final IOException ioe)
+        {
+            throw new ConnectException(MessageFactory.createStaticMessage("Error when closing channel: "
+                                                                          + channel), ioe, this);
+        }
     }
 
     public String getProtocol()

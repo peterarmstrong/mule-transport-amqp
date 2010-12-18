@@ -16,12 +16,13 @@ import org.mule.api.transport.MessageRequester;
 import org.mule.transport.AbstractMessageRequesterFactory;
 
 /**
- * <code>AmqpMessageRequester</code> TODO document
+ * Creates instances of <code>AmqpMessageRequester</code>.
  */
 public class AmqpMessageRequesterFactory extends AbstractMessageRequesterFactory
 {
 
-    public MessageRequester create(InboundEndpoint endpoint) throws MuleException
+    @Override
+    public MessageRequester create(final InboundEndpoint endpoint) throws MuleException
     {
         return new AmqpMessageRequester(endpoint);
     }

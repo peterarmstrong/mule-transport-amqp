@@ -16,6 +16,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleException;
+import org.mule.api.MuleMessage;
 import org.mule.api.model.SessionException;
 import org.mule.api.processor.MessageProcessor;
 import org.mule.api.transport.PropertyScope;
@@ -36,24 +37,39 @@ public class AmqpMessageAcknowledger implements MessageProcessor
 
     public MuleEvent process(final MuleEvent event) throws MuleException
     {
-        final Long deliveryTag = event.getMessage().getInboundProperty(AmqpConstants.DELIVERY_TAG);
+        ack(event, multiple);
+        return event;
+    }
+
+    public void setMultiple(final boolean multiple)
+    {
+        this.multiple = multiple;
+    }
+
+    public static void ack(final MuleEvent event, final boolean multiple) throws SessionException
+    {
+        ack(event.getMessage(), multiple);
+    }
+
+    public static void ack(final MuleMessage message, final boolean multiple) throws SessionException
+    {
+        final Long deliveryTag = message.getInboundProperty(AmqpConstants.DELIVERY_TAG);
 
         if (deliveryTag == null)
         {
-            LOG.warn("Missing " + AmqpConstants.DELIVERY_TAG + " inbound property, impossible to ack event: "
-                     + event);
-            return event;
+            LOG.warn("Missing " + AmqpConstants.DELIVERY_TAG
+                     + " inbound property, impossible to ack message: " + message);
+            return;
         }
 
-        final Channel channel = event.getMessage().getProperty(AmqpConstants.CHANNEL,
-            PropertyScope.INVOCATION);
+        final Channel channel = message.getProperty(AmqpConstants.CHANNEL, PropertyScope.INVOCATION);
 
         if (channel == null)
         {
             throw new SessionException(
                 MessageFactory.createStaticMessage("No " + AmqpConstants.CHANNEL
-                                                   + " session property found, impossible to ack event: "
-                                                   + event));
+                                                   + " session property found, impossible to ack message: "
+                                                   + message));
         }
 
         try
@@ -72,13 +88,6 @@ public class AmqpMessageAcknowledger implements MessageProcessor
             LOG.debug("Manually acknowledged message w/deliveryTag: " + deliveryTag + " on channel: "
                       + channel);
         }
-
-        return event;
-    }
-
-    public void setMultiple(final boolean multiple)
-    {
-        this.multiple = multiple;
     }
 
 }

@@ -157,15 +157,16 @@ public abstract class AmqpEndpointUtil
 
     static String getQueueName(final String inboundEndpointAddress)
     {
-        return StringUtils.defaultString(StringUtils.substringAfter(inboundEndpointAddress, QUEUE_PREFIX));
+        return StringUtils.defaultString(StringUtils.substringAfter(trimQuery(inboundEndpointAddress),
+            QUEUE_PREFIX));
     }
 
     static String getExchangeName(final String inboundEndpointAddress)
     {
+        final String trimmedQuery = trimQuery(inboundEndpointAddress);
         final String exchangeName = StringUtils.defaultString(
-            StringUtils.substringBetween(inboundEndpointAddress, AmqpConnector.AMQP + "://", "/"
-                                                                                             + QUEUE_PREFIX),
-            StringUtils.substringAfter(inboundEndpointAddress, AmqpConnector.AMQP + "://"));
+            StringUtils.substringBetween(trimmedQuery, AmqpConnector.AMQP + "://", "/" + QUEUE_PREFIX),
+            StringUtils.substringAfter(trimmedQuery, AmqpConnector.AMQP + "://"));
 
         if (exchangeName.startsWith(QUEUE_PREFIX))
         {
@@ -173,5 +174,10 @@ public abstract class AmqpEndpointUtil
         }
 
         return exchangeName;
+    }
+
+    private static String trimQuery(final String address)
+    {
+        return StringUtils.substringBefore(address, "?");
     }
 }

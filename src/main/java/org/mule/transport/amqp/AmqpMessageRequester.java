@@ -10,97 +10,98 @@
 
 package org.mule.transport.amqp;
 
+import org.mule.DefaultMuleMessage;
 import org.mule.api.MuleMessage;
 import org.mule.api.endpoint.InboundEndpoint;
+import org.mule.api.transformer.Transformer;
+import org.mule.api.transport.PropertyScope;
 import org.mule.transport.AbstractMessageRequester;
+import org.mule.transport.ConnectException;
+import org.mule.transport.amqp.AmqpConnector.InboundConnection;
+import org.mule.transport.amqp.AmqpConstants.AckMode;
+import org.mule.transport.amqp.transformers.AmqpMessageToObject;
+import org.mule.util.StringUtils;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.GetResponse;
 
 /**
- * <code>AmqpMessageRequester</code> TODO document
+ * The <code>AmqpMessageRequester</code> is used to consume individual messages from an AMQP broker.
  */
 public class AmqpMessageRequester extends AbstractMessageRequester
 {
+    protected final AmqpConnector amqpConnector;
+    protected InboundConnection inboundConnection;
+    protected final Transformer receiveTransformer;
 
-    /* For general guidelines on writing transports see
-       http://www.mulesoft.org/documentation/display/MULE3USER/Creating+Transports
-
-             */
-
-    public AmqpMessageRequester(InboundEndpoint endpoint)
+    public AmqpMessageRequester(final InboundEndpoint endpoint)
     {
         super(endpoint);
+        amqpConnector = (AmqpConnector) endpoint.getConnector();
+        receiveTransformer = new AmqpMessageToObject();
+        receiveTransformer.setMuleContext(connector.getMuleContext());
     }
 
-    protected MuleMessage doRequest(long timeout) throws Exception
+    @Override
+    public void doConnect() throws ConnectException
     {
-        /* IMPLEMENTATION NOTE: This method should make a request to the underlying
-           transport.  */
-
-        /* IMPLEMENTATION NOTE: If you need to spawn any threads such as
-           worker threads for this receiver you can schedule a worker thread
-           with the work manager i.e.
-
-             getWorkManager().scheduleWork(worker, WorkManager.INDEFINITE, null, null);
-           Where 'worker' implemments javax.resource.spi.work.Work */
-
-        /* IMPLEMENTATION NOTE: When throwing an exception from this method
-           you need to throw an ConnectException that accepts a Message, a
-           cause exception and a reference to this MessageReceiver i.e.
-
-             throw new ConnectException(new Message(Messages.FAILED_TO_SCHEDULE_WORK), e, this);
-        */
-
-        // TODO the code necessay to Connect to the underlying resource
-        return null;
+        inboundConnection = amqpConnector.connect(getEndpoint());
     }
 
-    public void doConnect() throws Exception
-    {
-        /* IMPLEMENTATION NOTE: This method should make a connection to the underlying
-           transport i.e. connect to a socket or register a soap service. When
-           there is no connection to be made this method should be used to
-           check that resources are available. For example the
-           FileMessageReceiver checks that the directories it will be using
-           are available and readable. The MessageReceiver should remain in a
-           'stopped' state even after the doConnect() method is called. This
-           means that a connection has been made but no events will be
-           received until the start() method is called.
-
-           Calling start() on the MessageReceiver will call doConnect() if the receiver
-           hasn't connected already. */
-
-        /* IMPLEMENTATION NOTE: If you need to spawn any threads such as
-           worker threads for this receiver you can schedule a worker thread
-           with the work manager i.e.
-
-             getWorkManager().scheduleWork(worker, WorkManager.INDEFINITE, null, null);
-           Where 'worker' implemments javax.resource.spi.work.Work */
-
-        /* IMPLEMENTATION NOTE: When throwing an exception from this method
-           you need to throw an ConnectException that accepts a Message, a
-           cause exception and a reference to this MessageReceiver i.e.
-
-             throw new ConnectException(new Message(Messages.FAILED_TO_SCHEDULE_WORK), e, this);
-        */
-
-        // TODO the code necessay to Connect to the underlying resource
-    }
-
+    @Override
     public void doDisconnect() throws Exception
     {
-        /* IMPLEMENTATION NOTE: Disconnects and tidies up any rources allocted
-           using the doConnect() method. This method should return the
-           MessageRequester into a disconnected state so that it can be
-           connected again using the doConnect() method. */
-
-        // TODO release any resources here
+        amqpConnector.closeChannel(getChannel());
     }
 
+    @Override
     public void doDispose()
     {
-        /* IMPLEMENTATION NOTE: Is called when the Requester is being dispoed
-           and should clean up any resources. The doStop() and doDisconnect()
-           methods will be called implicitly when this method is called. */
+        inboundConnection = null;
     }
 
-}
+    @Override
+    protected MuleMessage doRequest(final long ignoredTimeout) throws Exception
+    {
+        final GetResponse response = getChannel().basicGet(getQueueName(),
+            amqpConnector.getAckMode().isAutoAck());
 
+        if (response == null)
+        {
+            return new DefaultMuleMessage(null, amqpConnector.getMuleContext());
+        }
+
+        final AmqpMessage amqpMessage = new AmqpMessage(StringUtils.EMPTY, response.getEnvelope(),
+            response.getProps(), response.getBody());
+
+        final MuleMessage muleMessage = amqpConnector.getMuleMessageFactory().create(amqpMessage,
+            amqpConnector.getMuleContext().getConfiguration().getDefaultEncoding());
+
+        // add message count to the message properties in case downstream message processors care for it
+        muleMessage.setProperty(AmqpConstants.MESSAGE_COUNT, response.getMessageCount(),
+            PropertyScope.INBOUND);
+
+        if (amqpConnector.getAckMode() == AckMode.MANUAL)
+        {
+            // in manual AckMode, the channel will be needed to ack the message
+            muleMessage.setProperty(AmqpConstants.CHANNEL, getChannel(), PropertyScope.INVOCATION);
+        }
+        else
+        {
+            // otherwise, ack if it's mule's responsibility
+            amqpConnector.ackMessageIfNecessary(getChannel(), amqpMessage);
+        }
+
+        return muleMessage;
+    }
+
+    protected Channel getChannel()
+    {
+        return inboundConnection == null ? null : inboundConnection.channel;
+    }
+
+    protected String getQueueName()
+    {
+        return inboundConnection == null ? null : inboundConnection.queue;
+    }
+}

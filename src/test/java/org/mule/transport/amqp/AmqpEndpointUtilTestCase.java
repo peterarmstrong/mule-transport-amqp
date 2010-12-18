@@ -16,15 +16,22 @@ public class AmqpEndpointUtilTestCase extends TestCase
 {
     public void testGetQueueName()
     {
+        assertEquals("queue", AmqpEndpointUtil.getQueueName("amqp://exchange/amqp-queue.queue?connector=foo"));
         assertEquals("queue", AmqpEndpointUtil.getQueueName("amqp://exchange/amqp-queue.queue"));
+        assertEquals("queue", AmqpEndpointUtil.getQueueName("amqp://amqp-queue.queue?connector=foo\""));
         assertEquals("queue", AmqpEndpointUtil.getQueueName("amqp://amqp-queue.queue"));
+        assertEquals("", AmqpEndpointUtil.getQueueName("amqp://exchange?connector=foo\""));
         assertEquals("", AmqpEndpointUtil.getQueueName("amqp://exchange"));
     }
 
     public void testGetExchangeName()
     {
+        assertEquals("exchange",
+            AmqpEndpointUtil.getExchangeName("amqp://exchange/amqp-queue.queue?connector=foo"));
         assertEquals("exchange", AmqpEndpointUtil.getExchangeName("amqp://exchange/amqp-queue.queue"));
+        assertEquals("", AmqpEndpointUtil.getExchangeName("amqp://amqp-queue.queue?connector=foo"));
         assertEquals("", AmqpEndpointUtil.getExchangeName("amqp://amqp-queue.queue"));
+        assertEquals("exchange", AmqpEndpointUtil.getExchangeName("amqp://exchange?connector=foo"));
         assertEquals("exchange", AmqpEndpointUtil.getExchangeName("amqp://exchange"));
     }
 }
