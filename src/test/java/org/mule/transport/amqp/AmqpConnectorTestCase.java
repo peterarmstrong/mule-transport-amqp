@@ -41,8 +41,6 @@ public class AmqpConnectorTestCase extends AbstractConnectorTestCase
         final AmqpConnector amqpConnector = (AmqpConnector) getConnector();
         amqpConnector.setAckMode(AckMode.MULE_AUTO);
         assertEquals(AckMode.MULE_AUTO, amqpConnector.getAckMode());
-
-        // TODO add more assertions
     }
 
     @Override

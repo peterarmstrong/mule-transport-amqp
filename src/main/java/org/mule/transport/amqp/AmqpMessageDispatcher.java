@@ -10,10 +10,19 @@
 
 package org.mule.transport.amqp;
 
+import java.io.IOException;
+
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleMessage;
 import org.mule.api.endpoint.OutboundEndpoint;
+import org.mule.api.transport.DispatchException;
+import org.mule.config.i18n.MessageFactory;
 import org.mule.transport.AbstractMessageDispatcher;
+import org.mule.transport.amqp.AmqpConnector.OutboundConnection;
+import org.mule.util.StringUtils;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.RpcClient;
 
 /**
  * The <code>AmqpMessageDispatcher</code> takes care of sending messages from Mule to an AMQP broker. It supports
@@ -21,93 +30,112 @@ import org.mule.transport.AbstractMessageDispatcher;
  */
 public class AmqpMessageDispatcher extends AbstractMessageDispatcher
 {
+    protected final AmqpConnector amqpConnector;
+    protected OutboundConnection outboundConnection;
+
+    protected enum OutboundAction
+    {
+        DISPATCH
+        {
+            @Override
+            public AmqpMessage run(final Channel channel,
+                                   final String exchange,
+                                   final String routingKey,
+                                   final AmqpMessage amqpMessage) throws IOException
+            {
+                channel.basicPublish(exchange, routingKey, amqpMessage.getProperties(), amqpMessage.getBody());
+                return null;
+            }
+        },
+        SEND
+        {
+            @Override
+            public AmqpMessage run(final Channel channel,
+                                   final String exchange,
+                                   final String routingKey,
+                                   final AmqpMessage amqpMessage) throws IOException
+            {
+                final RpcClient rpcClient = new RpcClient(channel, exchange, routingKey);
+                final byte[] rpcResult = rpcClient.primitiveCall(amqpMessage.getProperties(),
+                    amqpMessage.getBody());
+                return null;
+            }
+        };
+
+        public abstract AmqpMessage run(Channel channel,
+                                        String exchange,
+                                        String routingKey,
+                                        AmqpMessage amqpMessage) throws IOException;
+    };
+
     public AmqpMessageDispatcher(final OutboundEndpoint endpoint)
     {
         super(endpoint);
-
-        /*
-         * IMPLEMENTATION NOTE: If you need a reference to the specific connector for this dispatcher use: AmqpConnector
-         * cnn = (AmqpConnector)endpoint.getConnector();
-         */
+        amqpConnector = (AmqpConnector) endpoint.getConnector();
     }
 
     @Override
     public void doConnect() throws Exception
     {
-        /*
-         * IMPLEMENTATION NOTE: Makes a connection to the underlying resource. Where connections are managed by the
-         * connector this method may do nothing
-         */
-
-        // If a resource for this Dispatcher needs a connection established,
-        // then this is the place to do it
+        outboundConnection = amqpConnector.connect(getEndpoint());
     }
 
     @Override
     public void doDisconnect() throws Exception
     {
-        /*
-         * IMPLEMENTATION NOTE: Disconnect any conections made in the connect method
-         */
-
-        // If the connect method did not do anything then this method
-        // shouldn't do anything either
+        amqpConnector.closeChannel(getChannel());
     }
 
     @Override
     public void doDispose()
     {
-        // Optional; does not need to be implemented. Delete if not required
-
-        /*
-         * IMPLEMENTATION NOTE: Is called when the Dispatcher is being disposed and should clean up any open resources.
-         */
+        outboundConnection = null;
     }
 
     @Override
     public void doDispatch(final MuleEvent event) throws Exception
     {
-        /*
-         * IMPLEMENTATION NOTE: This is invoked when the endpoint is asynchronous. It should invoke the transport but
-         * not return any result. If a result is returned it should be ignorred, but if the underlying transport does
-         * have a notion of asynchronous processing, that should be invoked. This method is executed in a different
-         * thread to the request thread.
-         */
-
-        /*
-         * IMPLEMENTATION NOTE: The event message needs to be transformed for the outbound transformers to take effect.
-         * This isn't done automatically in case the dispatcher needs to modify the message before apllying
-         * transformers. To get the transformed outbound message call - event.transformMessage();
-         */
-
-        // TODO Write the client code here to dispatch the event over this transport
-
-        throw new UnsupportedOperationException("doDispatch");
+        doOutboundAction(event, OutboundAction.DISPATCH);
     }
 
     @Override
     public MuleMessage doSend(final MuleEvent event) throws Exception
     {
-        /*
-         * IMPLEMENTATION NOTE: Should send the event payload over the transport. If there is a response from the
-         * transport it shuold be returned from this method. The sendEvent method is called when the endpoint is running
-         * synchronously and any response returned will ultimately be passed back to the callee. This method is executed
-         * in the same thread as the request thread.
-         */
-
-        /*
-         * IMPLEMENTATION NOTE: The event message needs to be transformed for the outbound transformers to take effect.
-         * This isn't done automatically in case the dispatcher needs to modify the message before apllying
-         * transformers. To get the transformed outbound message call - event.transformMessage();
-         */
-
-        // TODO Write the client code here to send the event over this
-        // transport (or to dispatch the event to a store or repository)
-
-        // TODO Once the event has been sent, return the result (if any)
-        // wrapped in a MuleMessage object
-
-        throw new UnsupportedOperationException("doSend");
+        return createMuleMessage(doOutboundAction(event, OutboundAction.SEND));
     }
 
+    protected AmqpMessage doOutboundAction(final MuleEvent event, final OutboundAction outboundAction)
+        throws Exception
+    {
+        final MuleMessage message = event.getMessage();
+
+        if (!(message.getPayload() instanceof AmqpMessage))
+        {
+            throw new DispatchException(
+                MessageFactory.createStaticMessage("Message payload is not an instance of: "
+                                                   + AmqpMessage.class.getName()), event, null);
+        }
+
+        final Channel eventChannel = message.getInvocationProperty(AmqpConstants.CHANNEL, getChannel());
+        final String eventExchange = message.getOutboundProperty(AmqpConstants.EXCHANGE, getExchange());
+        final String eventRoutingKey = message.getOutboundProperty(AmqpConstants.ROUTING_KEY, getRoutingKey());
+        final AmqpMessage amqpMessage = (AmqpMessage) message.getPayload();
+
+        return outboundAction.run(eventChannel, eventExchange, eventRoutingKey, amqpMessage);
+    }
+
+    protected Channel getChannel()
+    {
+        return outboundConnection == null ? null : outboundConnection.channel;
+    }
+
+    protected String getExchange()
+    {
+        return outboundConnection == null ? StringUtils.EMPTY : outboundConnection.exchange;
+    }
+
+    protected String getRoutingKey()
+    {
+        return outboundConnection == null ? StringUtils.EMPTY : outboundConnection.routingKey;
+    }
 }

@@ -62,7 +62,6 @@ public abstract class AmqpConstants
     public static final String DELIVERY_TAG = "delivery-tag";
     public static final String EXCHANGE = "exchange";
     public static final String EXPIRATION = "expiration";
-    public static final String MESSAGE_COUNT = "message-count";
     public static final String MESSAGE_ID = "message-id";
     public static final String PRIORITY = "priority";
     public static final String REDELIVER = "redelivered";
@@ -74,8 +73,8 @@ public abstract class AmqpConstants
 
     public static final Set<String> AMQP_PROPERTY_NAMES = Collections.unmodifiableSet(new HashSet<String>(
         Arrays.asList(new String[]{APP_ID, CONSUMER_TAG, CONTENT_ENCODING, CONTENT_TYPE, CORRELATION_ID,
-            DELIVERY_MODE, DELIVERY_TAG, EXCHANGE, EXPIRATION, MESSAGE_COUNT, MESSAGE_ID, PRIORITY, REPLY_TO,
-            REDELIVER, ROUTING_KEY, TIMESTAMP, TYPE, USER_ID})));
+            DELIVERY_MODE, DELIVERY_TAG, EXCHANGE, EXPIRATION, MESSAGE_ID, PRIORITY, REPLY_TO, REDELIVER,
+            ROUTING_KEY, TIMESTAMP, TYPE, USER_ID})));
 
     // technical properties not intended to be messed with directly
     public static final String CHANNEL = AmqpConnector.AMQP + ".channel";

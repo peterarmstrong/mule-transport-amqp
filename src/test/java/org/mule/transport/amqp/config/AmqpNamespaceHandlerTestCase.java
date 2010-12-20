@@ -47,7 +47,6 @@ public class AmqpNamespaceHandlerTestCase extends FunctionalTestCase
         assertNotNull(c);
 
         assertEquals(AckMode.AMQP_AUTO, c.getAckMode());
-        // TODO add more assertions
     }
 
     public void testFullGlobalEndpoint() throws Exception
@@ -69,7 +68,6 @@ public class AmqpNamespaceHandlerTestCase extends FunctionalTestCase
             .getAddress());
         assertEquals("a.b.c", outboundEndpoint.getProperty(AmqpEndpointUtil.ROUTING_KEY));
         assertEquals("true", outboundEndpoint.getProperty(AmqpEndpointUtil.EXCHANGE_DURABLE));
-        // TODO add more assertions
     }
 
     public void testExistingQueueGlobalEndpoint() throws Exception
@@ -104,8 +102,6 @@ public class AmqpNamespaceHandlerTestCase extends FunctionalTestCase
         assertEquals("amqp://target-exchange", inboundEndpoint.getAddress());
         assertEquals("amqp://target-exchange", inboundEndpoint.getEndpointURI().getAddress());
     }
-
-    // TODO add more tests for other endpoints
 
     public void testGlobalTransformers() throws Exception
     {

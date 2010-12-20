@@ -10,7 +10,6 @@
 
 package org.mule.transport.amqp;
 
-import org.mule.DefaultMuleMessage;
 import org.mule.api.MuleMessage;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.transformer.Transformer;
@@ -23,7 +22,8 @@ import org.mule.transport.amqp.transformers.AmqpMessageToObject;
 import org.mule.util.StringUtils;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.GetResponse;
+import com.rabbitmq.client.QueueingConsumer;
+import com.rabbitmq.client.QueueingConsumer.Delivery;
 
 /**
  * The <code>AmqpMessageRequester</code> is used to consume individual messages from an AMQP broker.
@@ -61,25 +61,19 @@ public class AmqpMessageRequester extends AbstractMessageRequester
     }
 
     @Override
-    protected MuleMessage doRequest(final long ignoredTimeout) throws Exception
+    protected MuleMessage doRequest(final long timeout) throws Exception
     {
-        final GetResponse response = getChannel().basicGet(getQueueName(),
-            amqpConnector.getAckMode().isAutoAck());
 
-        if (response == null)
-        {
-            return new DefaultMuleMessage(null, amqpConnector.getMuleContext());
-        }
+        final QueueingConsumer consumer = new QueueingConsumer(getChannel());
+        getChannel().basicConsume(getQueueName(), amqpConnector.getAckMode().isAutoAck(), consumer);
+        final Delivery delivery = consumer.nextDelivery(timeout);
 
-        final AmqpMessage amqpMessage = new AmqpMessage(StringUtils.EMPTY, response.getEnvelope(),
-            response.getProps(), response.getBody());
+        if (delivery == null) return null;
 
-        final MuleMessage muleMessage = amqpConnector.getMuleMessageFactory().create(amqpMessage,
-            amqpConnector.getMuleContext().getConfiguration().getDefaultEncoding());
+        final AmqpMessage amqpMessage = new AmqpMessage(StringUtils.EMPTY, delivery.getEnvelope(),
+            delivery.getProperties(), delivery.getBody());
 
-        // add message count to the message properties in case downstream message processors care for it
-        muleMessage.setProperty(AmqpConstants.MESSAGE_COUNT, response.getMessageCount(),
-            PropertyScope.INBOUND);
+        final MuleMessage muleMessage = createMuleMessage(amqpMessage);
 
         if (amqpConnector.getAckMode() == AckMode.MANUAL)
         {

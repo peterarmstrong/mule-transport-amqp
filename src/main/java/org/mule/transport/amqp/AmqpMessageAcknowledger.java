@@ -19,7 +19,6 @@ import org.mule.api.MuleException;
 import org.mule.api.MuleMessage;
 import org.mule.api.model.SessionException;
 import org.mule.api.processor.MessageProcessor;
-import org.mule.api.transport.PropertyScope;
 import org.mule.config.i18n.MessageFactory;
 
 import com.rabbitmq.client.Channel;
@@ -62,7 +61,7 @@ public class AmqpMessageAcknowledger implements MessageProcessor
             return;
         }
 
-        final Channel channel = message.getProperty(AmqpConstants.CHANNEL, PropertyScope.INVOCATION);
+        final Channel channel = message.getInvocationProperty(AmqpConstants.CHANNEL);
 
         if (channel == null)
         {

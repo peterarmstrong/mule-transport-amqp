@@ -12,6 +12,7 @@ package org.mule.transport.amqp;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang.RandomStringUtils;
@@ -28,6 +29,7 @@ public class AmqpMessageRequesterITCase extends AbstractAmqpITCase
         setupExchangeAndQueue("amqpAutoAckRequester");
         setupExchangeAndQueue("amqpMuleAckRequester");
         setupExchangeAndQueue("amqpManualAckRequester");
+        setupExchangeAndQueue("amqpTimeOutRequester");
     }
 
     @Override
@@ -56,6 +58,19 @@ public class AmqpMessageRequesterITCase extends AbstractAmqpITCase
         AmqpMessageAcknowledger.ack(receivedMessage, false);
     }
 
+    public void testTimeOut() throws Exception
+    {
+        final long startTime = System.nanoTime();
+
+        final MuleMessage receivedMessage = new MuleClient(muleContext).request(
+            "amqp://amqp-queue." + getQueueName("amqpTimeOutRequester")
+                            + "?connector=amqpAutoAckLocalhostConnector", 2500L);
+
+        assertNull(receivedMessage);
+        final long durationNano = System.nanoTime() - startTime;
+        assertTrue(TimeUnit.MILLISECONDS.convert(durationNano, TimeUnit.NANOSECONDS) >= 2400L);
+    }
+
     private MuleMessage dispatchTestMessageAndAssertValidReceivedMessage(final String flowName,
                                                                          final String connectorName)
         throws Exception, IOException, InterruptedException, ExecutionException, TimeoutException
@@ -70,9 +85,7 @@ public class AmqpMessageRequesterITCase extends AbstractAmqpITCase
             DEFAULT_MULE_TEST_TIMEOUT_SECS * 1000L);
 
         assertValidReceivedMessage(correlationId, body, receivedMessage);
-        assertEquals(0, receivedMessage.getInboundProperty(AmqpConstants.MESSAGE_COUNT));
 
         return receivedMessage;
     }
-
 }

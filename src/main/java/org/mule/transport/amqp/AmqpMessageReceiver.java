@@ -33,6 +33,7 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * The <code>AmqpMessageReceiver</code> subscribes to a queue and dispatches received messages to Mule.
@@ -90,6 +91,13 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
             consumerTag = getChannel().basicConsume(getQueueName(), amqpConnector.getAckMode().isAutoAck(),
                 new DefaultConsumer(getChannel())
                 {
+                    @Override
+                    public void handleShutdownSignal(final String consumerTag,
+                                                     final ShutdownSignalException sse)
+                    {
+                        amqpConnector.onReceiverShutdownSignal(consumerTag, sse);
+                    }
+
                     @Override
                     public void handleDelivery(final String consumerTag,
                                                final Envelope envelope,
@@ -185,8 +193,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
         {
             try
             {
-                final MuleMessage muleMessage = amqpConnector.getMuleMessageFactory().create(amqpMessage,
-                    amqpConnector.getMuleContext().getConfiguration().getDefaultEncoding());
+                final MuleMessage muleMessage = createMuleMessage(amqpMessage);
 
                 if (amqpConnector.getAckMode() == AckMode.MANUAL)
                 {

@@ -33,6 +33,9 @@ import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.ShutdownSignalException;
+
+import edu.emory.mathcs.backport.java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Connects to a particular virtual host on a particular AMQP broker.
@@ -53,6 +56,8 @@ public class AmqpConnector extends AbstractConnector
 
     private ConnectionFactory connectionFactory;
     private Connection connection;
+
+    private final AtomicInteger receiverReportedExceptionCount = new AtomicInteger(0);
 
     public static class InboundConnection
     {
@@ -199,6 +204,29 @@ public class AmqpConnector extends AbstractConnector
             {
                 logger.debug("Mule acknowledged message: " + amqpMessage + " on channel: " + channel);
             }
+        }
+    }
+
+    public void onReceiverShutdownSignal(final String consumerTag, final ShutdownSignalException sse)
+    {
+        // ignore self initiated shutdowns
+        if (sse.isInitiatedByApplication()) return;
+
+        logger.warn("Received shutdown signal for consumer: " + consumerTag, sse);
+
+        final int expectedReceiverCount = getReceivers().size();
+
+        if (logger.isDebugEnabled())
+        {
+            logger.debug("About to recycle myself due to remote AMQP connection shutdown but need "
+                         + "to wait for all active receivers to report connection loss. Receiver count: "
+                         + (receiverReportedExceptionCount.get() + 1) + '/' + expectedReceiverCount);
+        }
+
+        if (receiverReportedExceptionCount.incrementAndGet() >= expectedReceiverCount)
+        {
+            receiverReportedExceptionCount.set(0);
+            handleException(new ConnectException(sse, this));
         }
     }
 
