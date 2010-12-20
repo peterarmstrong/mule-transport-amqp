@@ -18,9 +18,9 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.mule.api.MuleMessage;
 import org.mule.util.ArrayUtils;
 
-public class AmqpReplyToITCase extends AbstractAmqpITCase
+public class AmqpReplyToHandlerITCase extends AbstractAmqpITCase
 {
-    public AmqpReplyToITCase() throws IOException
+    public AmqpReplyToHandlerITCase() throws IOException
     {
         super();
     }

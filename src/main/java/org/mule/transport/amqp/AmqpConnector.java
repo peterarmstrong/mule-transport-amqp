@@ -11,6 +11,8 @@
 package org.mule.transport.amqp;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.mule.api.MuleContext;
 import org.mule.api.MuleException;
@@ -24,7 +26,10 @@ import org.mule.transport.AbstractConnector;
 import org.mule.transport.ConnectException;
 import org.mule.transport.amqp.AmqpConstants.AckMode;
 import org.mule.transport.amqp.AmqpConstants.DeliveryMode;
+import org.mule.util.NumberUtils;
+import org.mule.util.StringUtils;
 
+import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -38,6 +43,7 @@ public class AmqpConnector extends AbstractConnector
 
     private String host;
     private int port;
+    private String[] fallbackAddresses;
     private String virtualHost;
     private String username;
     private String password;
@@ -84,8 +90,6 @@ public class AmqpConnector extends AbstractConnector
     public void doInitialise() throws InitialisationException
     {
         connectionFactory = new ConnectionFactory();
-        connectionFactory.setHost(host);
-        connectionFactory.setPort(port);
         connectionFactory.setVirtualHost(virtualHost);
         connectionFactory.setUsername(username);
         connectionFactory.setPassword(password);
@@ -101,7 +105,36 @@ public class AmqpConnector extends AbstractConnector
     @Override
     public void doConnect() throws Exception
     {
-        connection = connectionFactory.newConnection();
+        final List<Address> brokerAddresses = new ArrayList<Address>();
+        brokerAddresses.add(new Address(host, port));
+
+        addFallbackAddresses(brokerAddresses);
+
+        connection = connectionFactory.newConnection(brokerAddresses.toArray(new Address[0]));
+    }
+
+    private void addFallbackAddresses(final List<Address> brokerAddresses)
+    {
+        if (fallbackAddresses == null) return;
+
+        for (final String fallbackAddress : fallbackAddresses)
+        {
+            final String[] fallbackAddressElements = StringUtils.splitAndTrim(fallbackAddress, ":");
+
+            if (fallbackAddressElements.length == 2)
+            {
+                brokerAddresses.add(new Address(fallbackAddressElements[0],
+                    NumberUtils.toInt(fallbackAddressElements[1])));
+            }
+            else if (fallbackAddressElements.length == 1)
+            {
+                brokerAddresses.add(new Address(fallbackAddressElements[0]));
+            }
+            else
+            {
+                logger.warn("Ignoring unparseable fallback address: " + fallbackAddress);
+            }
+        }
     }
 
     @Override
@@ -248,6 +281,11 @@ public class AmqpConnector extends AbstractConnector
     public void setPort(final int port)
     {
         this.port = port;
+    }
+
+    public void setFallbackAddresses(final String[] fallbackAddresses)
+    {
+        this.fallbackAddresses = fallbackAddresses;
     }
 
     public void setVirtualHost(final String virtualHost)

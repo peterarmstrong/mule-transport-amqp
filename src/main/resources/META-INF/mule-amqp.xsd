@@ -43,7 +43,7 @@
           default="localhost">
           <xsd:annotation>
             <xsd:documentation>
-              The AMQP broker to connect to.
+              The main AMQP broker host to connect to.
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
@@ -51,8 +51,18 @@
           default="5672">
           <xsd:annotation>
             <xsd:documentation>
-              The port to use to connect to the AMQP
+              The port to use to connect to the main
+              AMQP
               broker.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="fallbackAddresses" type="xsd:string">
+          <xsd:annotation>
+            <xsd:documentation>
+              A comma-separated list of "host:port" or
+              "host", defining fallback brokers to attempt connection
+              to, should the connection to main broker fail.
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
@@ -190,7 +200,7 @@
     <xsd:attribute name="exchangeName" type="xsd:string">
       <xsd:annotation>
         <xsd:documentation>
-        Leave blank or omit for the default exchange.
+          Leave blank or omit for the default exchange.
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
@@ -221,7 +231,8 @@
   <xsd:complexType name="basicAckType">
     <xsd:complexContent>
       <xsd:extension base="mule:abstractMessageProcessorType">
-        <xsd:attribute name="multiple" type="mule:substitutableBoolean" default="false" />
+        <xsd:attribute name="multiple" type="mule:substitutableBoolean"
+          default="false" />
       </xsd:extension>
     </xsd:complexContent>
   </xsd:complexType>
