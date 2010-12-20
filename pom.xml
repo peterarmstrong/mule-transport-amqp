@@ -13,12 +13,13 @@
 
   <properties>
     <mule.version>3.1.1-SNAPSHOT</mule.version>
+    <spring.version>3.0.3.RELEASE</spring.version>
+    <rabbitmq.version>2.2.0</rabbitmq.version>
     <!-- Tools properties -->
     <eclipsePluginVersion>2.5</eclipsePluginVersion>
     <vmtype>org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType</vmtype>
     <jdk5Name>J2SE-1.5</jdk5Name>
     <jdk.version>1.5</jdk.version>
-    <rabbitmq.version>2.2.0</rabbitmq.version>
   </properties>
 
   <build>
@@ -191,12 +192,21 @@
       <groupId>org.mule</groupId>
       <artifactId>mule-core</artifactId>
       <version>${mule.version}</version>
+      <scope>provided</scope>
     </dependency>
+    
     <!-- Xml configuration -->
     <dependency>
       <groupId>org.mule.modules</groupId>
       <artifactId>mule-module-spring-config</artifactId>
       <version>${mule.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>${spring.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Mule Transports -->
@@ -204,12 +214,15 @@
       <groupId>org.mule.transports</groupId>
       <artifactId>mule-transport-vm</artifactId>
       <version>${mule.version}</version>
+      <scope>provided</scope>
     </dependency>
+    
     <!-- Mule Modules -->
     <dependency>
       <groupId>org.mule.modules</groupId>
       <artifactId>mule-module-client</artifactId>
       <version>${mule.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Transport dependencies -->
@@ -217,6 +230,7 @@
       <groupId>com.rabbitmq</groupId>
       <artifactId>amqp-client</artifactId>
       <version>${rabbitmq.version}</version>
+      <scope>compile</scope>
     </dependency>
 
     <!-- for testing -->
@@ -375,7 +389,6 @@
               </execution>
             </executions>
           </plugin>
-
         </plugins>
       </build>
     </profile>
