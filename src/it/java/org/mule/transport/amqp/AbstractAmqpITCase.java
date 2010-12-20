@@ -73,7 +73,6 @@ public abstract class AbstractAmqpITCase extends FunctionalTestCase
 
         functionalTestComponent.setEventCallback(new EventCallback()
         {
-            @Override
             public void eventReceived(final MuleEventContext context, final Object component)
                 throws Exception
             {

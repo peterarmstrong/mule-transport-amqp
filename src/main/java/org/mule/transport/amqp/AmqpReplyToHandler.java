@@ -10,9 +10,9 @@
 
 package org.mule.transport.amqp;
 
-import java.io.IOException;
 import java.util.Collections;
 
+import org.mule.DefaultMuleMessage;
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleException;
 import org.mule.api.MuleMessage;
@@ -48,17 +48,20 @@ public class AmqpReplyToHandler extends DefaultReplyToHandler
 
         final ObjectToAmqpMessage objectToAmqpMessage = new ObjectToAmqpMessage();
         objectToAmqpMessage.setMuleContext(muleContext);
-        final AmqpMessage amqpMessage = (AmqpMessage) objectToAmqpMessage.transform(returnMessage);
 
         try
         {
+            final DefaultMuleMessage resultMessageAsBytes = new DefaultMuleMessage(
+                returnMessage.getPayloadAsBytes(), returnMessage, muleContext);
+            final AmqpMessage amqpMessage = (AmqpMessage) objectToAmqpMessage.transform(resultMessageAsBytes);
+
             outboundConnection.channel.basicPublish(outboundConnection.exchange, replyToQueueName,
                 amqpMessage.getProperties(), amqpMessage.getBody());
         }
-        catch (final IOException ioe)
+        catch (final Exception e)
         {
             throw new DispatchException(CoreMessages.failedToDispatchToReplyto(outboundEndpoint), event,
-                outboundEndpoint, ioe);
+                outboundEndpoint, e);
         }
     }
 

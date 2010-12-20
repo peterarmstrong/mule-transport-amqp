@@ -17,15 +17,12 @@ import javax.resource.spi.work.WorkException;
 
 import org.mule.api.MuleMessage;
 import org.mule.api.MuleRuntimeException;
-import org.mule.api.config.MuleProperties;
 import org.mule.api.construct.FlowConstruct;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.lifecycle.CreateException;
-import org.mule.api.processor.MessageProcessor;
 import org.mule.api.transport.Connector;
 import org.mule.api.transport.PropertyScope;
 import org.mule.config.i18n.MessageFactory;
-import org.mule.routing.requestreply.ReplyToPropertyRequestReplyReplier;
 import org.mule.transport.AbstractMessageReceiver;
 import org.mule.transport.ConnectException;
 import org.mule.transport.amqp.AmqpConnector.InboundConnection;
@@ -52,15 +49,6 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
     {
         super(connector, flowConstruct, endpoint);
         this.amqpConnector = (AmqpConnector) connector;
-    }
-
-    @Override
-    public void setListener(final MessageProcessor processor)
-    {
-        // TODO remove this when flows will handle reply-to properly
-        final ReplyToPropertyRequestReplyReplier replyToHandler = new ReplyToPropertyRequestReplyReplier();
-        replyToHandler.setListener(processor);
-        super.setListener(replyToHandler);
     }
 
     // FIXME remove when http://www.mulesoft.org/jira/browse/MULE-5288 is fixed
@@ -204,12 +192,6 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
                 {
                     // in manual AckMode, the channel will be needed to ack the message
                     muleMessage.setProperty(AmqpConstants.CHANNEL, channel, PropertyScope.INVOCATION);
-                }
-
-                if (muleMessage.getReplyTo() != null)
-                {
-                    muleMessage.setProperty(MuleProperties.MULE_FORCE_SYNC_PROPERTY, Boolean.TRUE,
-                        PropertyScope.INBOUND);
                 }
 
                 try
