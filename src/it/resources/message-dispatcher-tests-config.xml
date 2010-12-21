@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp"
+  xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+  xmlns:test="http://www.mulesoft.org/schema/mule/test"
+  xsi:schemaLocation="
+       http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.1/mule.xsd
+       http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/3.1/mule-amqp.xsd
+       http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/3.1/mule-vm.xsd
+       http://www.mulesoft.org/schema/mule/test http://www.mulesoft.org/schema/mule/test/3.1/mule-test.xsd">
+
+  <amqp:connector name="amqpConnector"
+                  virtualHost="mule-test"
+                  username="mule"
+                  password="elum" />
+                  
+  <bridge name="amqpExistingExchangeService" exchange-pattern="one-way">
+    <vm:inbound-endpoint path="amqpExistingExchangeService.in">
+      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+      <message-properties-transformer scope="outbound">
+        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+      </message-properties-transformer>
+    </vm:inbound-endpoint>
+    <!-- Dispatch to an existing exchange --> 
+    <amqp:outbound-endpoint exchangeName="amqpExistingExchangeService-exchange" />
+  </bridge>
+  
+  <bridge name="amqpRedeclaredExistingExchangeService" exchange-pattern="one-way">
+    <vm:inbound-endpoint path="amqpRedeclaredExistingExchangeService.in">
+      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+      <message-properties-transformer scope="outbound">
+        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+      </message-properties-transformer>
+    </vm:inbound-endpoint>
+    <!-- Dispatch to an existing exchange re-declared in Mule to ensure presence --> 
+    <amqp:outbound-endpoint exchangeName="amqpRedeclaredExistingExchangeService-exchange"
+                            exchangeType="fanout"
+                            exchangeAutoDelete="false"
+                            exchangeDurable="false" />
+  </bridge>
+  
+  <bridge name="amqpNewExchangeService" exchange-pattern="one-way">
+    <vm:inbound-endpoint path="amqpNewExchangeService.in" />
+    <!-- Dispatch to a new exchange  --> 
+    <amqp:outbound-endpoint exchangeName="amqpNewExchangeService-exchange"
+                            exchangeType="fanout"
+                            exchangeAutoDelete="true"
+                            exchangeDurable="false" />
+  </bridge>
+  
+  <bridge name="amqpRequestResponseService" exchange-pattern="request-response">
+    <vm:inbound-endpoint path="amqpRequestResponseService.in"
+                         exchange-pattern="request-response">
+      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+      <message-properties-transformer scope="outbound">
+        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+      </message-properties-transformer>
+    </vm:inbound-endpoint>
+    <!-- Send --> 
+    <amqp:outbound-endpoint exchange-pattern="request-response"
+                            exchangeName="amqpSendTargetService-exchange"
+                            exchangeType="fanout"
+                            exchangeAutoDelete="false"
+                            exchangeDurable="false" />
+  </bridge>
+    
+  <model>
+    <service name="amqpSendTargetService">
+      <inbound>
+        <amqp:inbound-endpoint exchangeName="amqpSendTargetService-exchange"
+                               exchangeType="fanout"
+                               exchangeAutoDelete="false"
+                               exchangeDurable="false"
+                               queueName="amqpSendTargetService-queue"
+                               queueDurable="false"
+                               queueExclusive="false"
+                               queueAutoDelete="true">
+          <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+          <message-properties-transformer scope="outbound">
+            <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+          </message-properties-transformer>
+        </amqp:inbound-endpoint>
+      </inbound>
+      <test:component appendString="-response" />
+    </service>
+  </model>
+</mule>

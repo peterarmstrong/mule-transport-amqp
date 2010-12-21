@@ -17,6 +17,7 @@ import java.util.Map;
 import org.mule.api.MuleMessage;
 import org.mule.api.transformer.TransformerException;
 import org.mule.api.transport.PropertyScope;
+import org.mule.config.i18n.MessageFactory;
 import org.mule.transformer.types.DataTypeFactory;
 import org.mule.transport.amqp.AmqpConstants;
 import org.mule.transport.amqp.AmqpMessage;
@@ -30,6 +31,8 @@ public class ObjectToAmqpMessage extends AbstractAmqpMessageToObject
     protected void declareInputOutputClasses()
     {
         registerSourceType(DataTypeFactory.BYTE_ARRAY);
+        registerSourceType(DataTypeFactory.STRING);
+        registerSourceType(DataTypeFactory.INPUT_STREAM);
         setReturnDataType(AMQP_MESSAGE_DATA_TYPE);
     }
 
@@ -37,7 +40,16 @@ public class ObjectToAmqpMessage extends AbstractAmqpMessageToObject
     public Object transformMessage(final MuleMessage message, final String outputEncoding)
         throws TransformerException
     {
-        final byte[] body = (byte[]) message.getPayload();
+        byte[] body;
+        try
+        {
+            body = message.getPayloadAsBytes();
+        }
+        catch (final Exception e)
+        {
+            throw new TransformerException(
+                MessageFactory.createStaticMessage("Impossible to extract bytes out of: " + message), e);
+        }
 
         final String consumerTag = getProperty(message, AmqpConstants.CONSUMER_TAG);
 

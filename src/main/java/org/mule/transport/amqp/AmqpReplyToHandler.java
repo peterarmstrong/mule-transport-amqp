@@ -55,7 +55,7 @@ public class AmqpReplyToHandler extends DefaultReplyToHandler
                 returnMessage.getPayloadAsBytes(), returnMessage, muleContext);
             final AmqpMessage amqpMessage = (AmqpMessage) objectToAmqpMessage.transform(resultMessageAsBytes);
 
-            outboundConnection.channel.basicPublish(outboundConnection.exchange, replyToQueueName,
+            outboundConnection.getChannel().basicPublish(outboundConnection.getExchange(), replyToQueueName,
                 amqpMessage.getProperties(), amqpMessage.getBody());
         }
         catch (final Exception e)

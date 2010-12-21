@@ -76,7 +76,7 @@ public class AmqpMessageRequesterITCase extends AbstractAmqpITCase
         throws Exception, IOException, InterruptedException, ExecutionException, TimeoutException
     {
         final byte[] body = RandomStringUtils.randomAlphanumeric(20).getBytes();
-        final String correlationId = dispatchTestMessage(body, flowName);
+        final String correlationId = publishMessageWithAmqp(body, flowName);
 
         final MuleMessage receivedMessage = new MuleClient(muleContext).request("amqp://amqp-queue."
                                                                                 + getQueueName(flowName)

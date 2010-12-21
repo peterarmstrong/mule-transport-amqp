@@ -10,7 +10,6 @@
 
 package org.mule.transport.amqp.transformers;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,21 +24,6 @@ import org.mule.transport.amqp.AmqpMuleMessageFactoryTestCase;
 public class ObjectToAmqpMessageTest extends AbstractTransformerTestCase
 {
     private final AmqpMessage amqpMessage = AmqpMuleMessageFactoryTestCase.getTestMessage();
-
-    public void xTestTransformMessage() throws Exception
-    {
-        final AmqpMessageToObject amqpMessageToObject = new AmqpMessageToObject();
-        final AmqpMessage amqpMessage = AmqpMuleMessageFactoryTestCase.getTestMessage();
-        final AmqpMuleMessageFactory amqpMuleMessageFactory = new AmqpMuleMessageFactory(muleContext);
-        final MuleMessage muleMessage = amqpMuleMessageFactory.create(amqpMessage, "utf-8");
-
-        final Object result = amqpMessageToObject.transformMessage(muleMessage, "iso-8859-1");
-
-        assertTrue(result instanceof byte[]);
-        assertTrue(Arrays.equals(amqpMessage.getBody(), (byte[]) result));
-
-        AmqpMuleMessageFactoryTestCase.checkInboundProperties(amqpMessage, muleMessage);
-    }
 
     @Override
     public Transformer getTransformer() throws Exception

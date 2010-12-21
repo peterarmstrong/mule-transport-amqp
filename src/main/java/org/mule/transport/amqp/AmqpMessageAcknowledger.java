@@ -61,7 +61,7 @@ public class AmqpMessageAcknowledger implements MessageProcessor
             return;
         }
 
-        final Channel channel = message.getInvocationProperty(AmqpConstants.CHANNEL);
+        final Channel channel = AmqpConnector.getChannelFromMessage(message);
 
         if (channel == null)
         {

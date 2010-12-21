@@ -21,8 +21,8 @@ import org.mule.transport.AbstractMessageDispatcher;
 import org.mule.transport.amqp.AmqpConnector.OutboundConnection;
 import org.mule.util.StringUtils;
 
+import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.RpcClient;
 
 /**
  * The <code>AmqpMessageDispatcher</code> takes care of sending messages from Mule to an AMQP broker. It supports
@@ -38,10 +38,12 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
         DISPATCH
         {
             @Override
-            public AmqpMessage run(final Channel channel,
+            public AmqpMessage run(final AmqpConnector amqpConnector,
+                                   final Channel channel,
                                    final String exchange,
                                    final String routingKey,
-                                   final AmqpMessage amqpMessage) throws IOException
+                                   final AmqpMessage amqpMessage,
+                                   final long timeout) throws IOException
             {
                 channel.basicPublish(exchange, routingKey, amqpMessage.getProperties(), amqpMessage.getBody());
                 return null;
@@ -50,22 +52,29 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
         SEND
         {
             @Override
-            public AmqpMessage run(final Channel channel,
+            public AmqpMessage run(final AmqpConnector amqpConnector,
+                                   final Channel channel,
                                    final String exchange,
                                    final String routingKey,
-                                   final AmqpMessage amqpMessage) throws IOException
+                                   final AmqpMessage amqpMessage,
+                                   final long timeout) throws IOException, InterruptedException
             {
-                final RpcClient rpcClient = new RpcClient(channel, exchange, routingKey);
-                final byte[] rpcResult = rpcClient.primitiveCall(amqpMessage.getProperties(),
-                    amqpMessage.getBody());
-                return null;
+                final DeclareOk declareOk = channel.queueDeclare();
+                final String temporaryReplyToQueue = declareOk.getQueue();
+                amqpMessage.getProperties().setReplyTo(temporaryReplyToQueue);
+
+                DISPATCH.run(amqpConnector, channel, exchange, routingKey, amqpMessage, timeout);
+                return amqpConnector.consume(amqpConnector.getConnection().createChannel(),
+                    temporaryReplyToQueue, true, timeout);
             }
         };
 
-        public abstract AmqpMessage run(Channel channel,
+        public abstract AmqpMessage run(final AmqpConnector amqpConnector,
+                                        Channel channel,
                                         String exchange,
                                         String routingKey,
-                                        AmqpMessage amqpMessage) throws IOException;
+                                        AmqpMessage amqpMessage,
+                                        final long timeout) throws IOException, InterruptedException;
     };
 
     public AmqpMessageDispatcher(final OutboundEndpoint endpoint)
@@ -113,29 +122,30 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
         {
             throw new DispatchException(
                 MessageFactory.createStaticMessage("Message payload is not an instance of: "
-                                                   + AmqpMessage.class.getName()), event, null);
+                                                   + AmqpMessage.class.getName()), event, getEndpoint());
         }
 
-        final Channel eventChannel = message.getInvocationProperty(AmqpConstants.CHANNEL, getChannel());
+        final Channel eventChannel = AmqpConnector.getChannelFromMessage(message, getChannel());
         final String eventExchange = message.getOutboundProperty(AmqpConstants.EXCHANGE, getExchange());
         final String eventRoutingKey = message.getOutboundProperty(AmqpConstants.ROUTING_KEY, getRoutingKey());
         final AmqpMessage amqpMessage = (AmqpMessage) message.getPayload();
 
-        return outboundAction.run(eventChannel, eventExchange, eventRoutingKey, amqpMessage);
+        return outboundAction.run(amqpConnector, eventChannel, eventExchange, eventRoutingKey, amqpMessage,
+            event.getTimeout());
     }
 
     protected Channel getChannel()
     {
-        return outboundConnection == null ? null : outboundConnection.channel;
+        return outboundConnection == null ? null : outboundConnection.getChannel();
     }
 
     protected String getExchange()
     {
-        return outboundConnection == null ? StringUtils.EMPTY : outboundConnection.exchange;
+        return outboundConnection == null ? StringUtils.EMPTY : outboundConnection.getExchange();
     }
 
     protected String getRoutingKey()
     {
-        return outboundConnection == null ? StringUtils.EMPTY : outboundConnection.routingKey;
+        return outboundConnection == null ? StringUtils.EMPTY : outboundConnection.getRoutingKey();
     }
 }

@@ -80,7 +80,7 @@ public class AmqpMessageReceiverITCase extends AbstractAmqpITCase
         final Future<MuleMessage> futureReceivedMessage = setupFunctionTestComponentForFlow(flowName);
 
         final byte[] body = RandomStringUtils.randomAlphanumeric(20).getBytes();
-        final String correlationId = dispatchTestMessage(body, flowName);
+        final String correlationId = publishMessageWithAmqp(body, flowName);
 
         final MuleMessage receivedMessage = futureReceivedMessage.get(DEFAULT_MULE_TEST_TIMEOUT_SECS,
             TimeUnit.SECONDS);

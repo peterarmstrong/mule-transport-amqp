@@ -44,10 +44,11 @@ public abstract class AmqpEndpointUtil
     public static final String EXCHANGE_TYPE = "exchangeType";
     public static final String ROUTING_KEY = "routingKey";
 
-    public static String getOrCreateQueue(final Channel channel, final InboundEndpoint inboundEndpoint)
-        throws IOException
+    public static String getOrCreateQueue(final Channel channel,
+                                          final InboundEndpoint inboundEndpoint,
+                                          final boolean activeDeclarationsOnly) throws IOException
     {
-        final String exchangeName = getOrCreateExchange(channel, inboundEndpoint);
+        final String exchangeName = getOrCreateExchange(channel, inboundEndpoint, activeDeclarationsOnly);
         final String routingKey = getRoutingKey(inboundEndpoint);
 
         if ((StringUtils.isBlank(exchangeName)) && (StringUtils.isNotBlank(routingKey)))
@@ -88,7 +89,7 @@ public abstract class AmqpEndpointUtil
 
             bindQueue(channel, inboundEndpoint, exchangeName, routingKey, queueName);
         }
-        else
+        else if (!activeDeclarationsOnly)
         {
             // no declaration parameter -> ensure the queue exists
             channel.queueDeclarePassive(queueName);
@@ -123,8 +124,9 @@ public abstract class AmqpEndpointUtil
                  + routingKey);
     }
 
-    public static String getOrCreateExchange(final Channel channel, final ImmutableEndpoint endpoint)
-        throws IOException
+    public static String getOrCreateExchange(final Channel channel,
+                                             final ImmutableEndpoint endpoint,
+                                             final boolean activeDeclarationsOnly) throws IOException
     {
         final String outboundEndpointAddress = endpoint.getAddress();
         final String exchangeName = getExchangeName(outboundEndpointAddress);
@@ -147,7 +149,7 @@ public abstract class AmqpEndpointUtil
             LOG.info("Declared exchange: " + exchangeName + " of type: " + exchangeType + ", durable: "
                      + exchangeDurable + ", autoDelete: " + exchangeAutoDelete);
         }
-        else
+        else if (!activeDeclarationsOnly)
         {
             // no exchange type -> ensure the exchange exists
             channel.exchangeDeclarePassive(exchangeName);

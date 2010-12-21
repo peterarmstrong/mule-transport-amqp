@@ -87,6 +87,14 @@ public class AmqpMuleMessageFactory extends AbstractMuleMessageFactory
         messageProperties.putAll(amqpProperties.getHeaders());
 
         muleMessage.addInboundProperties(messageProperties);
+
+        final Object muleSession = muleMessage.getInboundProperty(MuleProperties.MULE_SESSION_PROPERTY);
+        if (muleSession != null)
+        {
+            // this turns the com.rabbitmq.client.impl.LongStringHelper into a java.lang.String
+            muleMessage.setInboundProperty(MuleProperties.MULE_SESSION_PROPERTY, muleSession.toString());
+        }
+
     }
 
     private void putIfNonNull(final Map<String, Object> messageProperties,

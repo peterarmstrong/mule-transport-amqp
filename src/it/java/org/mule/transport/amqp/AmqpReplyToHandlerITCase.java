@@ -36,7 +36,7 @@ public class AmqpReplyToHandlerITCase extends AbstractAmqpITCase
         final Future<MuleMessage> futureReceivedMessage = setupFunctionTestComponentForFlow("amqpReplyTargetService");
 
         final byte[] body = RandomStringUtils.randomAlphanumeric(20).getBytes();
-        final String correlationId = dispatchTestMessage(body, "amqpReplierService",
+        final String correlationId = publishMessageWithAmqp(body, "amqpReplierService",
             "amqpReplyTargetService-queue");
 
         final MuleMessage receivedMessage = futureReceivedMessage.get(DEFAULT_MULE_TEST_TIMEOUT_SECS,

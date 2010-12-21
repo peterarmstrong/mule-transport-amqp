@@ -32,7 +32,7 @@
   </flow>
   
   <flow name="amqpServerNamedQueueExistingExchangeService">
-    <!-- Create a private exclusive server-named queue and bind it to an existing exchange  --> 
+    <!-- Create a private exclusive server-named queue and bind it to an existing exchange --> 
     <amqp:inbound-endpoint exchangeName="amqpServerNamedQueueExistingExchangeService-exchange"
                            connector-ref="amqpAutoAckLocalhostConnector" />
     <test:component />
@@ -50,7 +50,7 @@
   </flow>
   
   <flow name="amqpNewQueueRedeclaredExistingExchangeService">
-    <!-- Create a new queue and bind it to an existing exchange re-declared in Mule to ensure presense --> 
+    <!-- Create a new queue and bind it to an existing exchange re-declared in Mule to ensure presence --> 
     <amqp:inbound-endpoint exchangeName="amqpNewQueueRedeclaredExistingExchangeService-exchange"
                            exchangeType="fanout"
                            exchangeAutoDelete="false"

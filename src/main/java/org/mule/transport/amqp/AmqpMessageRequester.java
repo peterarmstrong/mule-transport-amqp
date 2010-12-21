@@ -19,11 +19,8 @@ import org.mule.transport.ConnectException;
 import org.mule.transport.amqp.AmqpConnector.InboundConnection;
 import org.mule.transport.amqp.AmqpConstants.AckMode;
 import org.mule.transport.amqp.transformers.AmqpMessageToObject;
-import org.mule.util.StringUtils;
 
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.QueueingConsumer;
-import com.rabbitmq.client.QueueingConsumer.Delivery;
 
 /**
  * The <code>AmqpMessageRequester</code> is used to consume individual messages from an AMQP broker.
@@ -63,15 +60,10 @@ public class AmqpMessageRequester extends AbstractMessageRequester
     @Override
     protected MuleMessage doRequest(final long timeout) throws Exception
     {
+        final AmqpMessage amqpMessage = amqpConnector.consume(getChannel(), getQueueName(),
+            amqpConnector.getAckMode().isAutoAck(), timeout);
 
-        final QueueingConsumer consumer = new QueueingConsumer(getChannel());
-        getChannel().basicConsume(getQueueName(), amqpConnector.getAckMode().isAutoAck(), consumer);
-        final Delivery delivery = consumer.nextDelivery(timeout);
-
-        if (delivery == null) return null;
-
-        final AmqpMessage amqpMessage = new AmqpMessage(StringUtils.EMPTY, delivery.getEnvelope(),
-            delivery.getProperties(), delivery.getBody());
+        if (amqpMessage == null) return null;
 
         final MuleMessage muleMessage = createMuleMessage(amqpMessage);
 
@@ -91,11 +83,11 @@ public class AmqpMessageRequester extends AbstractMessageRequester
 
     protected Channel getChannel()
     {
-        return inboundConnection == null ? null : inboundConnection.channel;
+        return inboundConnection == null ? null : inboundConnection.getChannel();
     }
 
     protected String getQueueName()
     {
-        return inboundConnection == null ? null : inboundConnection.queue;
+        return inboundConnection == null ? null : inboundConnection.getQueue();
     }
 }

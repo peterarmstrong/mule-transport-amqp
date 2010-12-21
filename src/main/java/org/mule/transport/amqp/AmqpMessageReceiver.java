@@ -15,6 +15,8 @@ import java.io.IOException;
 import javax.resource.spi.work.Work;
 import javax.resource.spi.work.WorkException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.mule.api.MuleMessage;
 import org.mule.api.MuleRuntimeException;
 import org.mule.api.construct.FlowConstruct;
@@ -33,7 +35,6 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * The <code>AmqpMessageReceiver</code> subscribes to a queue and dispatches received messages to Mule.
@@ -92,13 +93,6 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
                 new DefaultConsumer(getChannel())
                 {
                     @Override
-                    public void handleShutdownSignal(final String consumerTag,
-                                                     final ShutdownSignalException sse)
-                    {
-                        amqpConnector.onReceiverShutdownSignal(consumerTag, sse);
-                    }
-
-                    @Override
                     public void handleDelivery(final String consumerTag,
                                                final Envelope envelope,
                                                final AMQP.BasicProperties properties,
@@ -156,12 +150,12 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
 
     protected Channel getChannel()
     {
-        return inboundConnection == null ? null : inboundConnection.channel;
+        return inboundConnection == null ? null : inboundConnection.getChannel();
     }
 
     protected String getQueueName()
     {
-        return inboundConnection == null ? null : inboundConnection.queue;
+        return inboundConnection == null ? null : inboundConnection.getQueue();
     }
 
     private void deliverAmqpMessage(final AmqpMessage amqpMessage)
@@ -180,6 +174,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
 
     private final class AmqpMessageRouterWork implements Work
     {
+        private final Log logger = LogFactory.getLog(AmqpMessageRouterWork.class);
         private final Channel channel;
         private final AmqpMessage amqpMessage;
 
@@ -212,8 +207,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
             }
             catch (final Exception e)
             {
-                throw new MuleRuntimeException(MessageFactory.createStaticMessage("Impossible to route: "
-                                                                                  + amqpMessage), e);
+                logger.error("Impossible to route: " + amqpMessage, e);
             }
 
         }

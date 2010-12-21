@@ -31,36 +31,68 @@ import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.QueueingConsumer;
+import com.rabbitmq.client.QueueingConsumer.Delivery;
+import com.rabbitmq.client.ShutdownListener;
+import com.rabbitmq.client.ShutdownSignalException;
 
 public abstract class AbstractAmqpITCase extends FunctionalTestCase
 {
-    protected final Connection conn;
-    protected final Channel channel;
+    protected final ConnectionFactory factory;
+    protected final Connection connection;
+    private final AtomicReference<Channel> channelRef = new AtomicReference<Channel>();
 
     public AbstractAmqpITCase() throws IOException
     {
         super();
         setDisposeManagerPerSuite(true);
 
-        final ConnectionFactory factory = new ConnectionFactory();
+        factory = new ConnectionFactory();
         factory.setUsername("mule");
         factory.setPassword("elum");
         factory.setVirtualHost("mule-test");
-        conn = factory.newConnection();
-        channel = conn.createChannel();
+        connection = factory.newConnection();
+    }
+
+    private Channel newChannel() throws IOException
+    {
+        final Channel channel = connection.createChannel();
+        channel.addShutdownListener(new ShutdownListener()
+        {
+            public void shutdownCompleted(final ShutdownSignalException sse)
+            {
+                if (!sse.isInitiatedByApplication())
+                {
+                    channelRef.set(null);
+                }
+            }
+        });
+        return channel;
+    }
+
+    protected Channel getChannel() throws IOException
+    {
+        Channel channel = channelRef.get();
+
+        if (channel != null)
+        {
+            return channel;
+        }
+
+        channel = newChannel();
+
+        if (channelRef.compareAndSet(null, channel))
+        {
+            return channel;
+        }
+
+        return getChannel();
     }
 
     @Override
     protected boolean isGracefulShutdown()
     {
         return true;
-    }
-
-    @Override
-    protected void suitePostTearDown() throws Exception
-    {
-        channel.close();
-        conn.close();
     }
 
     protected Future<MuleMessage> setupFunctionTestComponentForFlow(final String flowName) throws Exception
@@ -118,16 +150,31 @@ public abstract class AbstractAmqpITCase extends FunctionalTestCase
     {
         final String exchange = setupExchange(flowName);
         final String queue = getQueueName(flowName);
-        channel.queueDeclare(queue, false, false, true, Collections.<String, Object> emptyMap());
-        channel.queueBind(queue, exchange, "");
-        channel.queuePurge(queue);
+
+        getChannel().queueDeclare(queue, false, false, true, Collections.<String, Object> emptyMap());
+        getChannel().queueBind(queue, exchange, "");
+        getChannel().queuePurge(queue);
     }
 
     protected String setupExchange(final String flowName) throws IOException
     {
         final String exchange = getExchangeName(flowName);
-        channel.exchangeDeclare(exchange, "fanout");
+        getChannel().exchangeDeclare(exchange, "fanout");
         return exchange;
+    }
+
+    protected void deleteExchange(final String flowName) throws InterruptedException
+    {
+        final String exchange = getExchangeName(flowName);
+        try
+        {
+            getChannel().exchangeDelete(exchange);
+        }
+        catch (final IOException ioe)
+        {
+            // ignored
+            Thread.sleep(1000L);
+        }
     }
 
     protected String getQueueName(final String flowName)
@@ -140,12 +187,12 @@ public abstract class AbstractAmqpITCase extends FunctionalTestCase
         return flowName + "-exchange";
     }
 
-    protected String dispatchTestMessage(final byte[] body, final String flowName) throws IOException
+    protected String publishMessageWithAmqp(final byte[] body, final String flowName) throws IOException
     {
-        return dispatchTestMessage(body, flowName, null);
+        return publishMessageWithAmqp(body, flowName, null);
     }
 
-    protected String dispatchTestMessage(final byte[] body, final String flowName, final String replyTo)
+    protected String publishMessageWithAmqp(final byte[] body, final String flowName, final String replyTo)
         throws IOException
     {
         final String correlationId = UUID.getUUID();
@@ -154,8 +201,18 @@ public abstract class AbstractAmqpITCase extends FunctionalTestCase
         props.setCorrelationId(correlationId);
         props.setReplyTo(replyTo);
         props.setHeaders(Collections.<String, Object> singletonMap("customHeader", 123L));
-        channel.basicPublish(getExchangeName(flowName), "", props, body);
+        getChannel().basicPublish(getExchangeName(flowName), "", props, body);
         return correlationId;
+    }
+
+    protected Delivery consumeMessageWithAmqp(final String queue, final long timeout)
+        throws IOException, InterruptedException
+    {
+        final QueueingConsumer consumer = new QueueingConsumer(getChannel());
+        final String consumerTag = getChannel().basicConsume(queue, true, consumer);
+        final Delivery delivery = consumer.nextDelivery(timeout);
+        getChannel().basicCancel(consumerTag);
+        return delivery;
     }
 
     protected void assertValidReceivedMessage(final String correlationId,

@@ -13,9 +13,11 @@ package org.mule.transport.amqp;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.mule.api.MuleContext;
 import org.mule.api.MuleException;
+import org.mule.api.MuleMessage;
 import org.mule.api.endpoint.ImmutableEndpoint;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.endpoint.OutboundEndpoint;
@@ -33,9 +35,10 @@ import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.QueueingConsumer;
+import com.rabbitmq.client.QueueingConsumer.Delivery;
+import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
-
-import edu.emory.mathcs.backport.java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Connects to a particular virtual host on a particular AMQP broker.
@@ -53,36 +56,115 @@ public class AmqpConnector extends AbstractConnector
     private DeliveryMode deliveryMode;
     private byte priority;
     private AckMode ackMode;
+    private boolean activeDeclarationsOnly;
 
     private ConnectionFactory connectionFactory;
     private Connection connection;
+    private ConnectorConnection connectorConnection;
 
-    private final AtomicInteger receiverReportedExceptionCount = new AtomicInteger(0);
-
-    public static class InboundConnection
+    private static abstract class AmqpConnection
     {
-        // no getter -> get over it
-        public final Channel channel;
-        public final String queue;
+        private final AmqpConnector amqpConnector;
+        private final AtomicReference<Channel> channelRef = new AtomicReference<Channel>();
 
-        private InboundConnection(final Channel channel, final String queue)
+        private AmqpConnection(final AmqpConnector amqpConnector)
         {
-            this.channel = channel;
-            this.queue = queue;
+            this.amqpConnector = amqpConnector;
+        }
+
+        private Channel newChannel()
+        {
+            try
+            {
+                final Channel channel = amqpConnector.getConnection().createChannel();
+                channel.addShutdownListener(new ShutdownListener()
+                {
+                    public void shutdownCompleted(final ShutdownSignalException sse)
+                    {
+                        if (!sse.isInitiatedByApplication())
+                        {
+                            channelRef.set(null);
+                        }
+                    }
+                });
+                return channel;
+            }
+            catch (final IOException ioe)
+            {
+                amqpConnector.handleException(new ConnectException(
+                    MessageFactory.createStaticMessage("Impossible to create new channels on connection: "
+                                                       + amqpConnector.getConnection()), ioe, amqpConnector));
+                return null;
+            }
+        }
+
+        public Channel getChannel()
+        {
+            Channel channel = channelRef.get();
+
+            if (channel != null)
+            {
+                return channel;
+            }
+
+            channel = newChannel();
+
+            if (channelRef.compareAndSet(null, channel))
+            {
+                return channel;
+            }
+
+            // race condition: use the channel created by another thread
+            return getChannel();
         }
     }
 
-    public static class OutboundConnection
+    private static class ConnectorConnection extends AmqpConnection
     {
-        public final Channel channel;
-        public final String exchange;
-        public final String routingKey;
-
-        private OutboundConnection(final Channel channel, final String exchange, final String routingKey)
+        private ConnectorConnection(final AmqpConnector amqpConnector)
         {
-            this.channel = channel;
+            super(amqpConnector);
+        }
+    }
+
+    public static class InboundConnection extends AmqpConnection
+    {
+        private final String queue;
+
+        private InboundConnection(final AmqpConnector amqpConnector, final String queue)
+        {
+            super(amqpConnector);
+            this.queue = queue;
+        }
+
+        public String getQueue()
+        {
+            return queue;
+        }
+    }
+
+    public static class OutboundConnection extends AmqpConnection
+    {
+        private final String exchange;
+        private final String routingKey;
+
+        private OutboundConnection(final AmqpConnector amqpConnector,
+                                   final String exchange,
+                                   final String routingKey)
+        {
+            super(amqpConnector);
             this.exchange = exchange;
             this.routingKey = routingKey;
+        }
+
+        public String getExchange()
+        {
+            return exchange;
+        }
+
+        public String getRoutingKey()
+        {
+            return routingKey;
         }
     }
 
@@ -103,6 +185,7 @@ public class AmqpConnector extends AbstractConnector
     @Override
     public void doDispose()
     {
+        connectorConnection = null;
         connection = null;
         connectionFactory = null;
     }
@@ -116,6 +199,8 @@ public class AmqpConnector extends AbstractConnector
         addFallbackAddresses(brokerAddresses);
 
         connection = connectionFactory.newConnection(brokerAddresses.toArray(new Address[0]));
+
+        connectorConnection = new ConnectorConnection(this);
     }
 
     private void addFallbackAddresses(final List<Address> brokerAddresses)
@@ -145,6 +230,7 @@ public class AmqpConnector extends AbstractConnector
     @Override
     public void doDisconnect() throws Exception
     {
+        connectorConnection.getChannel().close();
         connection.close();
     }
 
@@ -160,13 +246,23 @@ public class AmqpConnector extends AbstractConnector
         // NOOP
     }
 
+    public static Channel getChannelFromMessage(final MuleMessage message)
+    {
+        return getChannelFromMessage(message, null);
+    }
+
+    public static Channel getChannelFromMessage(final MuleMessage message, final Channel defaultValue)
+    {
+        return message.getInvocationProperty(AmqpConstants.CHANNEL, defaultValue);
+    }
+
     public InboundConnection connect(final InboundEndpoint inboundEndpoint) throws ConnectException
     {
         try
         {
-            final Channel channel = connection.createChannel();
-            final String queueName = AmqpEndpointUtil.getOrCreateQueue(channel, inboundEndpoint);
-            return new InboundConnection(channel, queueName);
+            final String queueName = AmqpEndpointUtil.getOrCreateQueue(connectorConnection.getChannel(),
+                inboundEndpoint, activeDeclarationsOnly);
+            return new InboundConnection(this, queueName);
         }
         catch (final IOException ioe)
         {
@@ -180,11 +276,11 @@ public class AmqpConnector extends AbstractConnector
     {
         try
         {
-            final Channel channel = connection.createChannel();
             final String routingKey = AmqpEndpointUtil.getRoutingKey(outboundEndpoint);
-            final String exchange = AmqpEndpointUtil.getOrCreateExchange(channel, outboundEndpoint);
+            final String exchange = AmqpEndpointUtil.getOrCreateExchange(connectorConnection.getChannel(),
+                outboundEndpoint, activeDeclarationsOnly);
 
-            return new OutboundConnection(channel, exchange, routingKey);
+            return new OutboundConnection(this, exchange, routingKey);
         }
         catch (final IOException ioe)
         {
@@ -192,6 +288,22 @@ public class AmqpConnector extends AbstractConnector
                 MessageFactory.createStaticMessage("Error when connecting outbound endpoint: "
                                                    + outboundEndpoint), ioe, this);
         }
+    }
+
+    public AmqpMessage consume(final Channel channel,
+                               final String queue,
+                               final boolean autoAck,
+                               final long timeout) throws IOException, InterruptedException
+    {
+        final QueueingConsumer consumer = new QueueingConsumer(channel);
+        final String consumerTag = channel.basicConsume(queue, autoAck, consumer);
+        final Delivery delivery = consumer.nextDelivery(timeout);
+        channel.basicCancel(consumerTag);
+
+        if (delivery == null) return null;
+
+        return new AmqpMessage(consumerTag, delivery.getEnvelope(), delivery.getProperties(),
+            delivery.getBody());
     }
 
     public void ackMessageIfNecessary(final Channel channel, final AmqpMessage amqpMessage)
@@ -204,29 +316,6 @@ public class AmqpConnector extends AbstractConnector
             {
                 logger.debug("Mule acknowledged message: " + amqpMessage + " on channel: " + channel);
             }
-        }
-    }
-
-    public void onReceiverShutdownSignal(final String consumerTag, final ShutdownSignalException sse)
-    {
-        // ignore self initiated shutdowns
-        if (sse.isInitiatedByApplication()) return;
-
-        logger.warn("Received shutdown signal for consumer: " + consumerTag, sse);
-
-        final int expectedReceiverCount = getReceivers().size();
-
-        if (logger.isDebugEnabled())
-        {
-            logger.debug("About to recycle myself due to remote AMQP connection shutdown but need "
-                         + "to wait for all active receivers to report connection loss. Receiver count: "
-                         + (receiverReportedExceptionCount.get() + 1) + '/' + expectedReceiverCount);
-        }
-
-        if (receiverReportedExceptionCount.incrementAndGet() >= expectedReceiverCount)
-        {
-            receiverReportedExceptionCount.set(0);
-            handleException(new ConnectException(sse, this));
         }
     }
 
@@ -266,6 +355,11 @@ public class AmqpConnector extends AbstractConnector
         return new AmqpReplyToHandler(this);
     }
 
+    public Connection getConnection()
+    {
+        return connection;
+    }
+
     public String getProtocol()
     {
         return AMQP;
@@ -289,6 +383,11 @@ public class AmqpConnector extends AbstractConnector
     public void setAckMode(final AckMode ackMode)
     {
         this.ackMode = ackMode;
+    }
+
+    public void setActiveDeclarationsOnly(final boolean activeDeclarationsOnly)
+    {
+        this.activeDeclarationsOnly = activeDeclarationsOnly;
     }
 
     public DeliveryMode getDeliveryMode()
