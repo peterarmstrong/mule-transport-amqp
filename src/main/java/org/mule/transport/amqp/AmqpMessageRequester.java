@@ -42,7 +42,7 @@ public class AmqpMessageRequester extends AbstractMessageRequester
     @Override
     public void doConnect() throws ConnectException
     {
-        inboundConnection = amqpConnector.connect(getEndpoint());
+        inboundConnection = amqpConnector.connect(this);
     }
 
     @Override

@@ -35,6 +35,7 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.ShutdownSignalException;
 
 /**
  * The <code>AmqpMessageReceiver</code> subscribes to a queue and dispatches received messages to Mule.
@@ -64,7 +65,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
     @Override
     public void doConnect() throws ConnectException
     {
-        inboundConnection = amqpConnector.connect(getEndpoint());
+        inboundConnection = amqpConnector.connect(this);
 
         if (logger.isDebugEnabled())
         {
@@ -107,6 +108,20 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
                         }
 
                         deliverAmqpMessage(amqpMessage);
+                    }
+
+                    @Override
+                    public void handleShutdownSignal(final String consumerTag,
+                                                     final ShutdownSignalException sse)
+                    {
+                        if (!sse.isInitiatedByApplication())
+                        {
+                            // inform the connector the subscription is dead so it will reconnect the receiver
+                            amqpConnector.handleException(new ConnectException(
+                                MessageFactory.createStaticMessage("Unexpected susbscription shutdown for: "
+                                                                   + consumerTag), sse,
+                                AmqpMessageReceiver.this));
+                        }
                     }
                 });
 
@@ -160,7 +175,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
 
     private void deliverAmqpMessage(final AmqpMessage amqpMessage)
     {
-        // deliver message in a different thread to free the connector's thread
+        // deliver message in a different thread to free the Amqp Connector's thread
         try
         {
             getWorkManager().scheduleWork(new AmqpMessageRouterWork(getChannel(), amqpMessage));

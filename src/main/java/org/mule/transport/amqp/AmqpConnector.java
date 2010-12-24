@@ -22,6 +22,10 @@ import org.mule.api.endpoint.ImmutableEndpoint;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.endpoint.OutboundEndpoint;
 import org.mule.api.lifecycle.InitialisationException;
+import org.mule.api.transport.Connectable;
+import org.mule.api.transport.MessageDispatcher;
+import org.mule.api.transport.MessageReceiver;
+import org.mule.api.transport.MessageRequester;
 import org.mule.api.transport.ReplyToHandler;
 import org.mule.config.i18n.MessageFactory;
 import org.mule.transport.AbstractConnector;
@@ -83,6 +87,8 @@ public class AmqpConnector extends AbstractConnector
                     {
                         if (!sse.isInitiatedByApplication())
                         {
+                            // do not inform the connector of the issue as it can't decide what to do
+                            // reset the channel so it would later be lazily reconnected
                             channelRef.set(null);
                         }
                     }
@@ -256,7 +262,18 @@ public class AmqpConnector extends AbstractConnector
         return message.getInvocationProperty(AmqpConstants.CHANNEL, defaultValue);
     }
 
-    public InboundConnection connect(final InboundEndpoint inboundEndpoint) throws ConnectException
+    public InboundConnection connect(final MessageReceiver messageReceiver) throws ConnectException
+    {
+        return connect(messageReceiver, messageReceiver.getEndpoint());
+    }
+
+    public InboundConnection connect(final MessageRequester messageRequester) throws ConnectException
+    {
+        return connect(messageRequester, messageRequester.getEndpoint());
+    }
+
+    private InboundConnection connect(final Connectable connectable, final InboundEndpoint inboundEndpoint)
+        throws ConnectException
     {
         try
         {
@@ -268,12 +285,15 @@ public class AmqpConnector extends AbstractConnector
         {
             throw new ConnectException(
                 MessageFactory.createStaticMessage("Error when connecting inbound endpoint: "
-                                                   + inboundEndpoint), ioe, this);
+                                                   + inboundEndpoint), ioe, connectable);
         }
     }
 
-    public OutboundConnection connect(final OutboundEndpoint outboundEndpoint) throws ConnectException
+    public OutboundConnection connect(final MessageDispatcher messageDispatcher) throws ConnectException
     {
+
+        final OutboundEndpoint outboundEndpoint = messageDispatcher.getEndpoint();
+
         try
         {
             final String routingKey = AmqpEndpointUtil.getRoutingKey(outboundEndpoint);
@@ -286,7 +306,7 @@ public class AmqpConnector extends AbstractConnector
         {
             throw new ConnectException(
                 MessageFactory.createStaticMessage("Error when connecting outbound endpoint: "
-                                                   + outboundEndpoint), ioe, this);
+                                                   + outboundEndpoint), ioe, messageDispatcher);
         }
     }
 

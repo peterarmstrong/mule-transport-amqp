@@ -12,17 +12,14 @@ package org.mule.transport.amqp;
 
 import java.util.Collections;
 
-import org.mule.DefaultMuleMessage;
+import org.mule.DefaultMuleEvent;
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleException;
 import org.mule.api.MuleMessage;
 import org.mule.api.endpoint.OutboundEndpoint;
+import org.mule.api.processor.MessageProcessor;
 import org.mule.api.transformer.Transformer;
-import org.mule.api.transport.DispatchException;
-import org.mule.config.i18n.CoreMessages;
 import org.mule.transport.DefaultReplyToHandler;
-import org.mule.transport.amqp.AmqpConnector.OutboundConnection;
-import org.mule.transport.amqp.transformers.ObjectToAmqpMessage;
 
 public class AmqpReplyToHandler extends DefaultReplyToHandler
 {
@@ -40,29 +37,12 @@ public class AmqpReplyToHandler extends DefaultReplyToHandler
     {
         final String replyToQueueName = (String) replyTo;
 
-        // FIXME use a message dispatcher
-        final OutboundEndpoint outboundEndpoint = getEndpoint(event, AmqpConnector.AMQP + "://"
-                                                                     + AmqpEndpointUtil.QUEUE_PREFIX
+        // target the default (ie. "") exchange with a routing key equals to the queue replied to
+        final OutboundEndpoint outboundEndpoint = getEndpoint(event, AmqpConnector.AMQP + "://?routingKey="
                                                                      + replyToQueueName);
-        final OutboundConnection outboundConnection = amqpConnector.connect(outboundEndpoint);
 
-        final ObjectToAmqpMessage objectToAmqpMessage = new ObjectToAmqpMessage();
-        objectToAmqpMessage.setMuleContext(muleContext);
-
-        try
-        {
-            final DefaultMuleMessage resultMessageAsBytes = new DefaultMuleMessage(
-                returnMessage.getPayloadAsBytes(), returnMessage, muleContext);
-            final AmqpMessage amqpMessage = (AmqpMessage) objectToAmqpMessage.transform(resultMessageAsBytes);
-
-            outboundConnection.getChannel().basicPublish(outboundConnection.getExchange(), replyToQueueName,
-                amqpMessage.getProperties(), amqpMessage.getBody());
-        }
-        catch (final Exception e)
-        {
-            throw new DispatchException(CoreMessages.failedToDispatchToReplyto(outboundEndpoint), event,
-                outboundEndpoint, e);
-        }
+        final MessageProcessor dispatcher = amqpConnector.createDispatcherMessageProcessor(outboundEndpoint);
+        dispatcher.process(new DefaultMuleEvent(returnMessage, outboundEndpoint, event.getSession()));
     }
 
 }

@@ -86,7 +86,7 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
     @Override
     public void doConnect() throws Exception
     {
-        outboundConnection = amqpConnector.connect(getEndpoint());
+        outboundConnection = amqpConnector.connect(this);
     }
 
     @Override
@@ -130,8 +130,17 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
         final String eventRoutingKey = message.getOutboundProperty(AmqpConstants.ROUTING_KEY, getRoutingKey());
         final AmqpMessage amqpMessage = (AmqpMessage) message.getPayload();
 
-        return outboundAction.run(amqpConnector, eventChannel, eventExchange, eventRoutingKey, amqpMessage,
-            event.getTimeout());
+        final AmqpMessage result = outboundAction.run(amqpConnector, eventChannel, eventExchange,
+            eventRoutingKey, amqpMessage, event.getTimeout());
+
+        if (logger.isDebugEnabled())
+        {
+            logger.debug(String.format(
+                "Successfully performed %s(channel: %s, exchange: %s, routing key: %s) for: %s and received: %s",
+                outboundAction, eventChannel, eventExchange, eventRoutingKey, event, result));
+        }
+
+        return result;
     }
 
     protected Channel getChannel()
