@@ -18,6 +18,7 @@ Features
 - Support of all AMQP's message properties, including custom headers.
 - Support of reply to (publishing replies to the default exchange).
 - Support of automatic, Mule-driven and manual message acknowledgment.
+- Support of the default exchange semantics in outbound endpoints.
 
 Integration Testing
 -------------------

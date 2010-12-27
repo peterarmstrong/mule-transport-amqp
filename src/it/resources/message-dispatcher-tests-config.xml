@@ -48,6 +48,18 @@
                             exchangeDurable="false" />
   </bridge>
   
+  <bridge name="amqpDefaultExchangeService" exchange-pattern="one-way">
+    <vm:inbound-endpoint path="amqpDefaultExchangeService.in">
+      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+      <message-properties-transformer scope="outbound">
+        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+      </message-properties-transformer>
+    </vm:inbound-endpoint>
+    <!-- Dispatch to the default exchange  --> 
+    <amqp:outbound-endpoint exchangeName=""
+                            queueName="amqpDefaultExchangeService-queue" />
+  </bridge>
+    
   <bridge name="amqpRequestResponseService" exchange-pattern="request-response">
     <vm:inbound-endpoint path="amqpRequestResponseService.in"
                          exchange-pattern="request-response">
@@ -68,7 +80,7 @@
                             exchangeAutoDelete="false"
                             exchangeDurable="false" />
   </bridge>
-    
+
   <model>
     <service name="amqpSendTargetService">
       <inbound>

@@ -296,9 +296,19 @@ public class AmqpConnector extends AbstractConnector
 
         try
         {
-            final String routingKey = AmqpEndpointUtil.getRoutingKey(outboundEndpoint);
+            String routingKey = AmqpEndpointUtil.getRoutingKey(outboundEndpoint);
             final String exchange = AmqpEndpointUtil.getOrCreateExchange(connectorConnection.getChannel(),
                 outboundEndpoint, activeDeclarationsOnly);
+
+            // handle dispatching to default exchange
+            if ((StringUtils.isBlank(exchange)) && (StringUtils.isBlank(routingKey)))
+            {
+                final String queueName = AmqpEndpointUtil.getQueueName(outboundEndpoint.getAddress());
+                if (StringUtils.isNotBlank(queueName))
+                {
+                    routingKey = queueName;
+                }
+            }
 
             return new OutboundConnection(this, exchange, routingKey);
         }

@@ -168,15 +168,14 @@ public abstract class AmqpEndpointUtil
         return StringUtils.defaultString((String) endpoint.getProperty(ROUTING_KEY));
     }
 
-    static String getQueueName(final String inboundEndpointAddress)
+    public static String getQueueName(final String endpointAddress)
     {
-        return StringUtils.defaultString(StringUtils.substringAfter(trimQuery(inboundEndpointAddress),
-            QUEUE_PREFIX));
+        return StringUtils.defaultString(StringUtils.substringAfter(trimQuery(endpointAddress), QUEUE_PREFIX));
     }
 
-    static String getExchangeName(final String inboundEndpointAddress)
+    public static String getExchangeName(final String endpointAddress)
     {
-        final String trimmedQuery = trimQuery(inboundEndpointAddress);
+        final String trimmedQuery = trimQuery(endpointAddress);
         final String exchangeName = StringUtils.defaultString(
             StringUtils.substringBetween(trimmedQuery, AmqpConnector.AMQP + "://", "/" + QUEUE_PREFIX),
             StringUtils.substringAfter(trimmedQuery, AmqpConnector.AMQP + "://"));

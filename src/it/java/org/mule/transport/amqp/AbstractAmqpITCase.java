@@ -149,11 +149,17 @@ public abstract class AbstractAmqpITCase extends FunctionalTestCase
     protected void setupExchangeAndQueue(final String flowName) throws IOException
     {
         final String exchange = setupExchange(flowName);
+        final String queue = setupQueue(flowName);
+        getChannel().queueBind(queue, exchange, "");
+        getChannel().queuePurge(queue);
+    }
+
+    protected String setupQueue(final String flowName) throws IOException
+    {
         final String queue = getQueueName(flowName);
 
         getChannel().queueDeclare(queue, false, false, true, Collections.<String, Object> emptyMap());
-        getChannel().queueBind(queue, exchange, "");
-        getChannel().queuePurge(queue);
+        return queue;
     }
 
     protected String setupExchange(final String flowName) throws IOException

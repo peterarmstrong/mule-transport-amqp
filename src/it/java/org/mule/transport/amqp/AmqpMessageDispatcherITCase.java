@@ -29,6 +29,7 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
         setupExchangeAndQueue("amqpExistingExchangeService");
         setupExchangeAndQueue("amqpRedeclaredExistingExchangeService");
         deleteExchange("amqpNewExchangeService");
+        setupQueue("amqpDefaultExchangeService");
     }
 
     @Override
@@ -45,6 +46,11 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
     public void testDispatchToRedeclaredExistingExchange() throws Exception
     {
         dispatchTestMessageAndAssertValidReceivedMessage("amqpRedeclaredExistingExchangeService");
+    }
+
+    public void testDispatchToDefaultExchange() throws Exception
+    {
+        dispatchTestMessageAndAssertValidReceivedMessage("amqpDefaultExchangeService");
     }
 
     public void testDispatchToNewExchange() throws Exception
