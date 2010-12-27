@@ -78,10 +78,8 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
             payload, Collections.singletonMap("customHeader", customHeaderValue),
             DEFAULT_MULE_TEST_TIMEOUT_SECS * 1000);
 
-        // FIXME investigate why isn't the response transformer applied?
-        assertEquals(payload + "-response", new String(((AmqpMessage) response.getPayload()).getBody()));
-        // FIXME investigate why isn't the custom header carried all way through?
-        // assertEquals(customHeaderValue, response.getInboundProperty("customHeader"));
+        assertEquals(payload + "-response", response.getPayloadAsString());
+        assertEquals(customHeaderValue, response.getInboundProperty("customHeader").toString());
     }
 
     private void dispatchTestMessageAndAssertValidReceivedMessage(final String flowName) throws Exception

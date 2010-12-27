@@ -55,6 +55,11 @@
       <message-properties-transformer scope="outbound">
         <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
       </message-properties-transformer>
+      <response>
+        <message-properties-transformer scope="outbound">
+          <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+        </message-properties-transformer>
+      </response>
     </vm:inbound-endpoint>
     <!-- Send --> 
     <amqp:outbound-endpoint exchange-pattern="request-response"

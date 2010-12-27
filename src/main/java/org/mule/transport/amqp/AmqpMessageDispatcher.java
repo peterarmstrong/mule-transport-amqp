@@ -15,10 +15,12 @@ import java.io.IOException;
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleMessage;
 import org.mule.api.endpoint.OutboundEndpoint;
+import org.mule.api.transformer.Transformer;
 import org.mule.api.transport.DispatchException;
 import org.mule.config.i18n.MessageFactory;
 import org.mule.transport.AbstractMessageDispatcher;
 import org.mule.transport.amqp.AmqpConnector.OutboundConnection;
+import org.mule.transport.amqp.transformers.AmqpMessageToObject;
 import org.mule.util.StringUtils;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -31,6 +33,7 @@ import com.rabbitmq.client.Channel;
 public class AmqpMessageDispatcher extends AbstractMessageDispatcher
 {
     protected final AmqpConnector amqpConnector;
+    protected final Transformer receiveTransformer;
     protected OutboundConnection outboundConnection;
 
     protected enum OutboundAction
@@ -64,8 +67,7 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
                 amqpMessage.getProperties().setReplyTo(temporaryReplyToQueue);
 
                 DISPATCH.run(amqpConnector, channel, exchange, routingKey, amqpMessage, timeout);
-                return amqpConnector.consume(amqpConnector.getConnection().createChannel(),
-                    temporaryReplyToQueue, true, timeout);
+                return amqpConnector.consume(channel, temporaryReplyToQueue, true, timeout);
             }
         };
 
@@ -81,6 +83,8 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
     {
         super(endpoint);
         amqpConnector = (AmqpConnector) endpoint.getConnector();
+        receiveTransformer = new AmqpMessageToObject();
+        receiveTransformer.setMuleContext(connector.getMuleContext());
     }
 
     @Override
@@ -110,7 +114,9 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
     @Override
     public MuleMessage doSend(final MuleEvent event) throws Exception
     {
-        return createMuleMessage(doOutboundAction(event, OutboundAction.SEND));
+        final MuleMessage resultMessage = createMuleMessage(doOutboundAction(event, OutboundAction.SEND));
+        resultMessage.applyTransformers(event, receiveTransformer);
+        return resultMessage;
     }
 
     protected AmqpMessage doOutboundAction(final MuleEvent event, final OutboundAction outboundAction)

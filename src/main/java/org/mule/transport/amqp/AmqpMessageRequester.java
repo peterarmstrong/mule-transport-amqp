@@ -12,13 +12,11 @@ package org.mule.transport.amqp;
 
 import org.mule.api.MuleMessage;
 import org.mule.api.endpoint.InboundEndpoint;
-import org.mule.api.transformer.Transformer;
 import org.mule.api.transport.PropertyScope;
 import org.mule.transport.AbstractMessageRequester;
 import org.mule.transport.ConnectException;
 import org.mule.transport.amqp.AmqpConnector.InboundConnection;
 import org.mule.transport.amqp.AmqpConstants.AckMode;
-import org.mule.transport.amqp.transformers.AmqpMessageToObject;
 
 import com.rabbitmq.client.Channel;
 
@@ -29,14 +27,11 @@ public class AmqpMessageRequester extends AbstractMessageRequester
 {
     protected final AmqpConnector amqpConnector;
     protected InboundConnection inboundConnection;
-    protected final Transformer receiveTransformer;
 
     public AmqpMessageRequester(final InboundEndpoint endpoint)
     {
         super(endpoint);
         amqpConnector = (AmqpConnector) endpoint.getConnector();
-        receiveTransformer = new AmqpMessageToObject();
-        receiveTransformer.setMuleContext(connector.getMuleContext());
     }
 
     @Override
