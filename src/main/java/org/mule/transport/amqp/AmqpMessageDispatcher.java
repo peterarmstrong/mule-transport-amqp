@@ -130,6 +130,17 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
         final String eventRoutingKey = message.getOutboundProperty(AmqpConstants.ROUTING_KEY, getRoutingKey());
         final AmqpMessage amqpMessage = (AmqpMessage) message.getPayload();
 
+        // override publication properties if they are not set
+        if ((amqpMessage.getProperties().getDeliveryMode() == null)
+            && (amqpConnector.getDeliveryMode() != null))
+        {
+            amqpMessage.getProperties().setDeliveryMode(amqpConnector.getDeliveryMode().getCode());
+        }
+        if ((amqpMessage.getProperties().getPriority() == null) && (amqpConnector.getPriority() != null))
+        {
+            amqpMessage.getProperties().setPriority(amqpConnector.getPriority().intValue());
+        }
+
         final AmqpMessage result = outboundAction.run(amqpConnector, eventChannel, eventExchange,
             eventRoutingKey, amqpMessage, event.getTimeout());
 

@@ -385,12 +385,12 @@ public class AmqpConnector extends AbstractConnector
         return AMQP;
     }
 
-    public byte getPriority()
+    public Byte getPriority()
     {
         return priority;
     }
 
-    public void setPriority(final byte priority)
+    public void setPriority(final Byte priority)
     {
         this.priority = priority;
     }
