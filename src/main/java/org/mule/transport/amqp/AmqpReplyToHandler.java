@@ -42,8 +42,9 @@ public class AmqpReplyToHandler extends DefaultReplyToHandler
         final String replyToQueueName = (String) replyTo;
 
         // target the default (ie. "") exchange with a routing key equals to the queue replied to
-        final OutboundEndpoint outboundEndpoint = getEndpoint(event, AmqpConnector.AMQP + "://?routingKey="
-                                                                     + urlEncode(event, replyToQueueName));
+        final OutboundEndpoint outboundEndpoint = getEndpoint(event,
+            AmqpConnector.AMQP + "://?routingKey=" + urlEncode(event, replyToQueueName) + "&connector="
+                            + urlEncode(event, amqpConnector.getName()));
 
         final MessageProcessor dispatcher = amqpConnector.createDispatcherMessageProcessor(outboundEndpoint);
         final DefaultMuleEvent replyEvent = new DefaultMuleEvent(returnMessage, outboundEndpoint,
@@ -56,8 +57,7 @@ public class AmqpReplyToHandler extends DefaultReplyToHandler
         }
     }
 
-    protected String urlEncode(final MuleEvent event, final String stringToEncode)
-        throws MessagingException
+    protected String urlEncode(final MuleEvent event, final String stringToEncode) throws MessagingException
 
     {
         try

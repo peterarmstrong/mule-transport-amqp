@@ -14,6 +14,12 @@
                   username="mule"
                   password="elum" />
                   
+  <amqp:connector name="activeOnlyAmqpConnector"
+                  virtualHost="mule-test"
+                  username="mule"
+                  password="elum"
+                  activeDeclarationsOnly="true" />
+                  
   <bridge name="amqpExistingExchangeService" exchange-pattern="one-way">
     <vm:inbound-endpoint path="amqpExistingExchangeService.in">
       <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
@@ -22,7 +28,8 @@
       </message-properties-transformer>
     </vm:inbound-endpoint>
     <!-- Dispatch to an existing exchange --> 
-    <amqp:outbound-endpoint exchangeName="amqpExistingExchangeService-exchange" />
+    <amqp:outbound-endpoint exchangeName="amqpExistingExchangeService-exchange"
+                            connector-ref="amqpConnector" />
   </bridge>
   
   <bridge name="amqpRedeclaredExistingExchangeService" exchange-pattern="one-way">
@@ -36,7 +43,8 @@
     <amqp:outbound-endpoint exchangeName="amqpRedeclaredExistingExchangeService-exchange"
                             exchangeType="fanout"
                             exchangeAutoDelete="false"
-                            exchangeDurable="false" />
+                            exchangeDurable="false"
+                            connector-ref="amqpConnector" />
   </bridge>
   
   <bridge name="amqpNewExchangeService" exchange-pattern="one-way">
@@ -45,7 +53,8 @@
     <amqp:outbound-endpoint exchangeName="amqpNewExchangeService-exchange"
                             exchangeType="fanout"
                             exchangeAutoDelete="true"
-                            exchangeDurable="false" />
+                            exchangeDurable="false"
+                            connector-ref="amqpConnector" />
   </bridge>
   
   <bridge name="amqpDefaultExchangeService" exchange-pattern="one-way">
@@ -57,7 +66,8 @@
     </vm:inbound-endpoint>
     <!-- Dispatch to the default exchange  --> 
     <amqp:outbound-endpoint exchangeName=""
-                            queueName="amqpDefaultExchangeService-queue" />
+                            queueName="amqpDefaultExchangeService-queue"
+                            connector-ref="amqpConnector" />
   </bridge>
     
   <bridge name="amqpRequestResponseService" exchange-pattern="request-response">
@@ -78,7 +88,24 @@
                             exchangeName="amqpSendTargetService-exchange"
                             exchangeType="fanout"
                             exchangeAutoDelete="false"
-                            exchangeDurable="false" />
+                            exchangeDurable="false"
+                            connector-ref="amqpConnector" />
+  </bridge>
+  
+  <bridge name="amqpMessageLevelOverrideService" exchange-pattern="one-way">
+    <vm:inbound-endpoint path="amqpMessageLevelOverrideService.in">
+      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+      <message-properties-transformer scope="outbound">
+        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+      </message-properties-transformer>
+      <!-- Define message level overrides for exchange and routing key -->
+      <message-properties-transformer scope="outbound">
+        <add-message-property key="exchange" value="amqpMessageLevelOverrideService-exchange"/>
+        <add-message-property key="routing-key" value="amqpMessageLevelOverrideService-queue"/>
+      </message-properties-transformer>
+    </vm:inbound-endpoint>
+    <amqp:outbound-endpoint exchangeName="thisExchangeWillBeOverriden"
+                            connector-ref="activeOnlyAmqpConnector" />
   </bridge>
 
   <model>
@@ -91,7 +118,8 @@
                                queueName="amqpSendTargetService-queue"
                                queueDurable="false"
                                queueExclusive="false"
-                               queueAutoDelete="true">
+                               queueAutoDelete="true"
+                               connector-ref="amqpConnector">
           <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
           <message-properties-transformer scope="outbound">
             <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
