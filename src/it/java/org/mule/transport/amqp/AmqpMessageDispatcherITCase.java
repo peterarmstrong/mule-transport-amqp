@@ -31,6 +31,8 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
         deleteExchange("amqpNewExchangeService");
         setupQueue("amqpDefaultExchangeService");
         setupExchangeAndQueue("amqpMessageLevelOverrideService");
+        setupExchange("amqpMandatoryDeliveryFailure");
+        setupExchangeAndQueue("amqpMandatoryDeliverySuccess");
     }
 
     @Override
@@ -80,6 +82,17 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
             }
         }
         fail("Exchange not created by outbound endpoint");
+    }
+
+    public void testMandatoryDeliveryFailure() throws Exception
+    {
+        new MuleClient(muleContext).dispatch("vm://amqpMandatoryDeliveryFailure.in", "payload", null);
+        // FIXME assert failure occurred
+    }
+
+    public void testMandatoryDeliverySuccess() throws Exception
+    {
+        dispatchTestMessageAndAssertValidReceivedMessage("amqpMandatoryDeliverySuccess");
     }
 
     public void testRequestResponse() throws Exception

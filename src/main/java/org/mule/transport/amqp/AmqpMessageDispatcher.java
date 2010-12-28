@@ -48,7 +48,8 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
                                    final AmqpMessage amqpMessage,
                                    final long timeout) throws IOException
             {
-                channel.basicPublish(exchange, routingKey, amqpMessage.getProperties(), amqpMessage.getBody());
+                channel.basicPublish(exchange, routingKey, amqpConnector.isMandatory(),
+                    amqpConnector.isImmediate(), amqpMessage.getProperties(), amqpMessage.getBody());
                 return null;
             }
         },

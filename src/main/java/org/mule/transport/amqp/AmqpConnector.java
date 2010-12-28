@@ -61,6 +61,8 @@ public class AmqpConnector extends AbstractConnector
     private byte priority;
     private AckMode ackMode;
     private boolean activeDeclarationsOnly;
+    private boolean mandatory;
+    private boolean immediate;
 
     private ConnectionFactory connectionFactory;
     private Connection connection;
@@ -93,6 +95,9 @@ public class AmqpConnector extends AbstractConnector
                         }
                     }
                 });
+
+                // FIXME add a return listener to handle undeliverable messages
+
                 return channel;
             }
             catch (final IOException ioe)
@@ -458,5 +463,25 @@ public class AmqpConnector extends AbstractConnector
     public void setPassword(final String password)
     {
         this.password = password;
+    }
+
+    public boolean isImmediate()
+    {
+        return immediate;
+    }
+
+    public void setImmediate(final boolean immediate)
+    {
+        this.immediate = immediate;
+    }
+
+    public boolean isMandatory()
+    {
+        return mandatory;
+    }
+
+    public void setMandatory(final boolean mandatory)
+    {
+        this.mandatory = mandatory;
     }
 }

@@ -20,6 +20,12 @@
                   password="elum"
                   activeDeclarationsOnly="true" />
                   
+  <amqp:connector name="mandatoryAmqpConnector"
+                  virtualHost="mule-test"
+                  username="mule"
+                  password="elum"
+                  mandatory="true" />
+                  
   <bridge name="amqpExistingExchangeService" exchange-pattern="one-way">
     <vm:inbound-endpoint path="amqpExistingExchangeService.in">
       <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
@@ -69,6 +75,42 @@
                             queueName="amqpDefaultExchangeService-queue"
                             connector-ref="amqpConnector" />
   </bridge>
+  
+  <bridge name="amqpMessageLevelOverrideService" exchange-pattern="one-way">
+    <vm:inbound-endpoint path="amqpMessageLevelOverrideService.in">
+      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+      <message-properties-transformer scope="outbound">
+        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+      </message-properties-transformer>
+      <!-- Define message level overrides for exchange and routing key -->
+      <message-properties-transformer scope="outbound">
+        <add-message-property key="exchange" value="amqpMessageLevelOverrideService-exchange"/>
+        <add-message-property key="routing-key" value="amqpMessageLevelOverrideService-queue"/>
+      </message-properties-transformer>
+    </vm:inbound-endpoint>
+    <amqp:outbound-endpoint exchangeName="thisExchangeWillBeOverriden"
+                            connector-ref="activeOnlyAmqpConnector" />
+  </bridge>
+
+  <bridge name="amqpMandatoryDeliveryFailure" exchange-pattern="one-way">
+    <vm:inbound-endpoint path="amqpMandatoryDeliveryFailure.in" />
+    <!-- No queue is bound to this exchange so this should fail -->
+    <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliveryFailure-exchange"
+                            connector-ref="mandatoryAmqpConnector" />
+  </bridge>
+  
+  <bridge name="amqpMandatoryDeliverySuccess" exchange-pattern="one-way">
+    <vm:inbound-endpoint path="amqpMandatoryDeliverySuccess.in">
+      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+      <message-properties-transformer scope="outbound">
+        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+      </message-properties-transformer>
+    </vm:inbound-endpoint>
+    <!-- No queue is bound to this exchange so this should fail -->
+    <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliverySuccess-exchange"
+                            connector-ref="mandatoryAmqpConnector" />
+  </bridge>
+  
     
   <bridge name="amqpRequestResponseService" exchange-pattern="request-response">
     <vm:inbound-endpoint path="amqpRequestResponseService.in"
@@ -90,22 +132,6 @@
                             exchangeAutoDelete="false"
                             exchangeDurable="false"
                             connector-ref="amqpConnector" />
-  </bridge>
-  
-  <bridge name="amqpMessageLevelOverrideService" exchange-pattern="one-way">
-    <vm:inbound-endpoint path="amqpMessageLevelOverrideService.in">
-      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
-      <message-properties-transformer scope="outbound">
-        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
-      </message-properties-transformer>
-      <!-- Define message level overrides for exchange and routing key -->
-      <message-properties-transformer scope="outbound">
-        <add-message-property key="exchange" value="amqpMessageLevelOverrideService-exchange"/>
-        <add-message-property key="routing-key" value="amqpMessageLevelOverrideService-queue"/>
-      </message-properties-transformer>
-    </vm:inbound-endpoint>
-    <amqp:outbound-endpoint exchangeName="thisExchangeWillBeOverriden"
-                            connector-ref="activeOnlyAmqpConnector" />
   </bridge>
 
   <model>

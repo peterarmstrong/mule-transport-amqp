@@ -121,6 +121,31 @@
             </xsd:restriction>
           </xsd:simpleType>
         </xsd:attribute>
+        <xsd:attribute name="mandatory" type="mule:substitutableBoolean"
+          default="false">
+          <xsd:annotation>
+            <xsd:documentation>
+              This flag tells the server how to react
+              if the message cannot be
+              routed to a queue. If this flag is
+              set to true, the server will throw an exception for any
+              unroutable message. If this flag is false, the server
+              silently drops the message.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="immediate" type="mule:substitutableBoolean"
+          default="false">
+          <xsd:annotation>
+            <xsd:documentation>
+              This flag tells the server how to react if the message cannot be
+              routed to a queue consumer immediately. If this flag is set to true, the server
+              will throw an exception for any undeliverable message. If
+              this flag is false, the server will queue the message, but
+              with no guarantee that it will ever be consumed.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
         <xsd:attribute name="ackMode" default="AMQP_AUTO">
           <xsd:annotation>
             <xsd:documentation>
