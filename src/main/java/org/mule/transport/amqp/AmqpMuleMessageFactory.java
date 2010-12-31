@@ -47,16 +47,25 @@ public class AmqpMuleMessageFactory extends AbstractMuleMessageFactory
         final AmqpMessage amqpMessage = (AmqpMessage) transportMessage;
 
         final Map<String, Object> messageProperties = new HashMap<String, Object>();
-
         putIfNonNull(messageProperties, AmqpConstants.CONSUMER_TAG, amqpMessage.getConsumerTag());
+        addEnvelopeProperties(messageProperties, amqpMessage.getEnvelope());
+        addBasicProperties(muleMessage, messageProperties, amqpMessage.getProperties());
+        muleMessage.addInboundProperties(messageProperties);
 
-        final Envelope envelope = amqpMessage.getEnvelope();
-        putIfNonNull(messageProperties, AmqpConstants.DELIVERY_TAG, envelope.getDeliveryTag());
-        putIfNonNull(messageProperties, AmqpConstants.REDELIVER, envelope.isRedeliver());
-        putIfNonNull(messageProperties, AmqpConstants.EXCHANGE, envelope.getExchange());
-        putIfNonNull(messageProperties, AmqpConstants.ROUTING_KEY, envelope.getRoutingKey());
+        final Object muleSession = muleMessage.getInboundProperty(MuleProperties.MULE_SESSION_PROPERTY);
+        if (muleSession != null)
+        {
+            // this turns the com.rabbitmq.client.impl.LongStringHelper into a java.lang.String
+            muleMessage.setInboundProperty(MuleProperties.MULE_SESSION_PROPERTY, muleSession.toString());
+        }
+    }
 
-        final BasicProperties amqpProperties = amqpMessage.getProperties();
+    private void addBasicProperties(final DefaultMuleMessage muleMessage,
+                                    final Map<String, Object> messageProperties,
+                                    final BasicProperties amqpProperties)
+    {
+        if (amqpProperties == null) return;
+
         putIfNonNull(messageProperties, AmqpConstants.APP_ID, amqpProperties.getAppId());
         putIfNonNull(messageProperties, AmqpConstants.CONTENT_ENCODING, amqpProperties.getContentEncoding());
         putIfNonNull(messageProperties, AmqpConstants.CONTENT_TYPE, amqpProperties.getContentType());
@@ -85,16 +94,16 @@ public class AmqpMuleMessageFactory extends AbstractMuleMessageFactory
         putIfNonNull(messageProperties, AmqpConstants.USER_ID, amqpProperties.getUserId());
 
         messageProperties.putAll(amqpProperties.getHeaders());
+    }
 
-        muleMessage.addInboundProperties(messageProperties);
+    private void addEnvelopeProperties(final Map<String, Object> messageProperties, final Envelope envelope)
+    {
+        if (envelope == null) return;
 
-        final Object muleSession = muleMessage.getInboundProperty(MuleProperties.MULE_SESSION_PROPERTY);
-        if (muleSession != null)
-        {
-            // this turns the com.rabbitmq.client.impl.LongStringHelper into a java.lang.String
-            muleMessage.setInboundProperty(MuleProperties.MULE_SESSION_PROPERTY, muleSession.toString());
-        }
-
+        putIfNonNull(messageProperties, AmqpConstants.DELIVERY_TAG, envelope.getDeliveryTag());
+        putIfNonNull(messageProperties, AmqpConstants.REDELIVER, envelope.isRedeliver());
+        putIfNonNull(messageProperties, AmqpConstants.EXCHANGE, envelope.getExchange());
+        putIfNonNull(messageProperties, AmqpConstants.ROUTING_KEY, envelope.getRoutingKey());
     }
 
     private void putIfNonNull(final Map<String, Object> messageProperties,

@@ -12,6 +12,8 @@ package org.mule.transport.amqp;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.mule.api.MuleMessage;
@@ -86,8 +88,13 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
 
     public void testMandatoryDeliveryFailure() throws Exception
     {
-        new MuleClient(muleContext).dispatch("vm://amqpMandatoryDeliveryFailure.in", "payload", null);
-        // FIXME assert failure occurred
+        final String payload = RandomStringUtils.randomAlphanumeric(20);
+        final Future<MuleMessage> futureReturnedMessage = setupFunctionTestComponentForFlow("returnedMessageProcessor");
+        new MuleClient(muleContext).dispatch("vm://amqpMandatoryDeliveryFailure.in", payload, null);
+        final MuleMessage returnedMessage = futureReturnedMessage.get(DEFAULT_MULE_TEST_TIMEOUT_SECS,
+            TimeUnit.SECONDS);
+        assertNotNull(returnedMessage);
+        assertEquals(payload, returnedMessage.getPayloadAsString());
     }
 
     public void testMandatoryDeliverySuccess() throws Exception

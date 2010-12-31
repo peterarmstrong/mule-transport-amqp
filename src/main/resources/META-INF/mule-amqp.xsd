@@ -272,6 +272,22 @@
     </xsd:complexContent>
   </xsd:complexType>
 
+  <xsd:element name="return-handler" type="returnHandlerType"
+    substitutionGroup="mule:abstract-message-processor" />
+  <xsd:complexType name="returnHandlerType">
+    <xsd:complexContent>
+      <xsd:extension base="mule:abstractMessageProcessorType">
+        <xsd:sequence>
+            <xsd:group ref="mule:messageProcessorOrOutboundEndpoint" minOccurs="0" maxOccurs="1">
+                <xsd:annotation>
+                    <xsd:documentation>Destination to which returned messages will be sent.</xsd:documentation>
+                </xsd:annotation>
+            </xsd:group>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
   <xsd:element name="amqpmessage-to-object-transformer"
     type="mule:abstractTransformerType" substitutionGroup="mule:abstract-transformer">
     <xsd:annotation>

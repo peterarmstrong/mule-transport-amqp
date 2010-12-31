@@ -92,12 +92,24 @@
                             connector-ref="activeOnlyAmqpConnector" />
   </bridge>
 
-  <bridge name="amqpMandatoryDeliveryFailure" exchange-pattern="one-way">
+  <vm:endpoint name="returnedMessageChannel" path="amqpMandatoryDeliveryFailure.returnedMessages" />
+
+  <flow name="amqpMandatoryDeliveryFailure">
     <vm:inbound-endpoint path="amqpMandatoryDeliveryFailure.in" />
+    
+    <amqp:return-handler>
+      <vm:outbound-endpoint ref="returnedMessageChannel" />
+    </amqp:return-handler>
+    
     <!-- No queue is bound to this exchange so this should fail -->
     <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliveryFailure-exchange"
                             connector-ref="mandatoryAmqpConnector" />
-  </bridge>
+  </flow>
+  
+  <flow name="returnedMessageProcessor">
+    <inbound-endpoint ref="returnedMessageChannel" />
+    <test:component />
+  </flow>
   
   <bridge name="amqpMandatoryDeliverySuccess" exchange-pattern="one-way">
     <vm:inbound-endpoint path="amqpMandatoryDeliverySuccess.in">
@@ -106,7 +118,7 @@
         <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
       </message-properties-transformer>
     </vm:inbound-endpoint>
-    <!-- No queue is bound to this exchange so this should fail -->
+    <!-- A queue is bound to this exchange so this should succeed -->
     <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliverySuccess-exchange"
                             connector-ref="mandatoryAmqpConnector" />
   </bridge>

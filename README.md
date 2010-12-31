@@ -19,6 +19,7 @@ Features
 - Support of reply to (publishing replies to the default exchange).
 - Support of automatic, Mule-driven and manual message acknowledgment.
 - Support of the default exchange semantics in outbound endpoints.
+- Support for mandatory and immediate publish parameters and handling of returned (undelivered) messages.
 
 Integration Testing
 -------------------

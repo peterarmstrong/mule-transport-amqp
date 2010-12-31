@@ -96,8 +96,6 @@ public class AmqpConnector extends AbstractConnector
                     }
                 });
 
-                // FIXME add a return listener to handle undeliverable messages
-
                 return channel;
             }
             catch (final IOException ioe)
