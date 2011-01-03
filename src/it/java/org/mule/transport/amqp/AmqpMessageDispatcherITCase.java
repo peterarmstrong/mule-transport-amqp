@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.RandomStringUtils;
 import org.mule.api.MuleMessage;
 import org.mule.module.client.MuleClient;
+import org.mule.transport.amqp.AmqpReturnHandler.LoggingReturnListener;
 import org.mule.util.UUID;
 
 import com.rabbitmq.client.QueueingConsumer.Delivery;
@@ -33,7 +34,8 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
         deleteExchange("amqpNewExchangeService");
         setupQueue("amqpDefaultExchangeService");
         setupExchangeAndQueue("amqpMessageLevelOverrideService");
-        setupExchange("amqpMandatoryDeliveryFailure");
+        setupExchange("amqpMandatoryDeliveryFailureNoHandler");
+        setupExchange("amqpMandatoryDeliveryFailureWithHandler");
         setupExchangeAndQueue("amqpMandatoryDeliverySuccess");
     }
 
@@ -86,11 +88,27 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
         fail("Exchange not created by outbound endpoint");
     }
 
-    public void testMandatoryDeliveryFailure() throws Exception
+    public void testMandatoryDeliveryFailureDefaultHandler() throws Exception
+    {
+        final LoggingReturnListener defaultReturnListener = (LoggingReturnListener) AmqpReturnHandler.DEFAULT_RETURN_LISTENER;
+        final int initialHitCount = defaultReturnListener.getHitCount();
+
+        final String payload = RandomStringUtils.randomAlphanumeric(20);
+        new MuleClient(muleContext).dispatch("vm://amqpMandatoryDeliveryFailureNoHandler.in", payload, null);
+        int attempts = 0;
+        while (attempts++ < 20)
+        {
+            if (defaultReturnListener.getHitCount() == initialHitCount + 1) return;
+            Thread.sleep(250L);
+        }
+        fail("Returned message never hit the default handler");
+    }
+
+    public void testMandatoryDeliveryFailureWithHandler() throws Exception
     {
         final String payload = RandomStringUtils.randomAlphanumeric(20);
         final Future<MuleMessage> futureReturnedMessage = setupFunctionTestComponentForFlow("returnedMessageProcessor");
-        new MuleClient(muleContext).dispatch("vm://amqpMandatoryDeliveryFailure.in", payload, null);
+        new MuleClient(muleContext).dispatch("vm://amqpMandatoryDeliveryFailureWithHandler.in", payload, null);
         final MuleMessage returnedMessage = futureReturnedMessage.get(DEFAULT_MULE_TEST_TIMEOUT_SECS,
             TimeUnit.SECONDS);
         assertNotNull(returnedMessage);

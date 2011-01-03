@@ -92,17 +92,25 @@
                             connector-ref="activeOnlyAmqpConnector" />
   </bridge>
 
+  <flow name="amqpMandatoryDeliveryFailureNoHandler">
+    <vm:inbound-endpoint path="amqpMandatoryDeliveryFailureNoHandler.in" />
+    
+    <!-- No queue is bound to this exchange so this should fail -->
+    <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliveryFailureNoHandler-exchange"
+                            connector-ref="mandatoryAmqpConnector" />
+  </flow>
+
   <vm:endpoint name="returnedMessageChannel" path="amqpMandatoryDeliveryFailure.returnedMessages" />
 
-  <flow name="amqpMandatoryDeliveryFailure">
-    <vm:inbound-endpoint path="amqpMandatoryDeliveryFailure.in" />
+  <flow name="amqpMandatoryDeliveryFailureWithHandler">
+    <vm:inbound-endpoint path="amqpMandatoryDeliveryFailureWithHandler.in" />
     
     <amqp:return-handler>
       <vm:outbound-endpoint ref="returnedMessageChannel" />
     </amqp:return-handler>
     
     <!-- No queue is bound to this exchange so this should fail -->
-    <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliveryFailure-exchange"
+    <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliveryFailureWithHandler-exchange"
                             connector-ref="mandatoryAmqpConnector" />
   </flow>
   
