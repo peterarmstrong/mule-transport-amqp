@@ -21,6 +21,7 @@ Features
 - Support of automatic, Mule-driven and manual message acknowledgment.
 - Support of the default exchange semantics in outbound endpoints.
 - Support for mandatory and immediate publish parameters and handling of returned (undelivered) messages.
+- Support for prefetch size and count "quality of service" settings.
 
 
 Integration Testing

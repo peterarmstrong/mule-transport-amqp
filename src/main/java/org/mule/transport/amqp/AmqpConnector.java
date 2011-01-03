@@ -74,6 +74,8 @@ public class AmqpConnector extends AbstractConnector
     private boolean immediate;
     private ReturnListener defaultReturnListener;
     private EndpointBuilder defaultReturnEndpointBuilder;
+    private int prefetchSize;
+    private int prefetchCount;
 
     private ConnectionFactory connectionFactory;
     private Connection connection;
@@ -94,6 +96,7 @@ public class AmqpConnector extends AbstractConnector
             try
             {
                 final Channel channel = amqpConnector.getConnection().createChannel();
+
                 channel.addShutdownListener(new ShutdownListener()
                 {
                     public void shutdownCompleted(final ShutdownSignalException sse)
@@ -108,6 +111,8 @@ public class AmqpConnector extends AbstractConnector
                 });
 
                 channel.setReturnListener(amqpConnector.defaultReturnListener);
+
+                channel.basicQos(amqpConnector.getPrefetchSize(), amqpConnector.getPrefetchCount(), false);
 
                 return channel;
             }
@@ -529,5 +534,25 @@ public class AmqpConnector extends AbstractConnector
     public void setMandatory(final boolean mandatory)
     {
         this.mandatory = mandatory;
+    }
+
+    public int getPrefetchSize()
+    {
+        return prefetchSize;
+    }
+
+    public void setPrefetchSize(final int prefetchSize)
+    {
+        this.prefetchSize = prefetchSize;
+    }
+
+    public int getPrefetchCount()
+    {
+        return prefetchCount;
+    }
+
+    public void setPrefetchCount(final int prefetchCount)
+    {
+        this.prefetchCount = prefetchCount;
     }
 }

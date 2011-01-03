@@ -200,6 +200,22 @@
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
+        <xsd:attribute name="prefetchSize" type="mule:substitutableInt"
+          default="0">
+          <xsd:annotation>
+            <xsd:documentation>
+              The maximum amount of content (measured in octets) that the server will deliver, 0 if unlimited.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="prefetchCount" type="mule:substitutableInt"
+          default="0">
+          <xsd:annotation>
+            <xsd:documentation>
+              The maximum number of messages that the server will deliver, 0 if unlimited.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
       </xsd:extension>
     </xsd:complexContent>
   </xsd:complexType>
