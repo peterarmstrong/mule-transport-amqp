@@ -12,16 +12,21 @@ package org.mule.transport.amqp;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.mule.api.MuleContext;
 import org.mule.api.MuleException;
 import org.mule.api.MuleMessage;
+import org.mule.api.endpoint.EndpointBuilder;
+import org.mule.api.endpoint.EndpointException;
 import org.mule.api.endpoint.ImmutableEndpoint;
 import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.endpoint.OutboundEndpoint;
 import org.mule.api.lifecycle.InitialisationException;
+import org.mule.api.processor.MessageProcessor;
+import org.mule.api.transformer.Transformer;
 import org.mule.api.transport.Connectable;
 import org.mule.api.transport.MessageDispatcher;
 import org.mule.api.transport.MessageReceiver;
@@ -32,6 +37,7 @@ import org.mule.transport.AbstractConnector;
 import org.mule.transport.ConnectException;
 import org.mule.transport.amqp.AmqpConstants.AckMode;
 import org.mule.transport.amqp.AmqpConstants.DeliveryMode;
+import org.mule.transport.amqp.transformers.AmqpMessageToObject;
 import org.mule.util.NumberUtils;
 import org.mule.util.StringUtils;
 
@@ -41,6 +47,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
 import com.rabbitmq.client.QueueingConsumer.Delivery;
+import com.rabbitmq.client.ReturnListener;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 
@@ -50,6 +57,8 @@ import com.rabbitmq.client.ShutdownSignalException;
 public class AmqpConnector extends AbstractConnector
 {
     public static final String AMQP = "amqp";
+
+    private final Transformer receiveTransformer;
 
     private String host;
     private int port;
@@ -63,6 +72,8 @@ public class AmqpConnector extends AbstractConnector
     private boolean activeDeclarationsOnly;
     private boolean mandatory;
     private boolean immediate;
+    private ReturnListener defaultReturnListener;
+    private EndpointBuilder defaultReturnEndpointBuilder;
 
     private ConnectionFactory connectionFactory;
     private Connection connection;
@@ -96,7 +107,7 @@ public class AmqpConnector extends AbstractConnector
                     }
                 });
 
-                channel.setReturnListener(AmqpReturnHandler.DEFAULT_RETURN_LISTENER);
+                channel.setReturnListener(amqpConnector.defaultReturnListener);
 
                 return channel;
             }
@@ -182,6 +193,9 @@ public class AmqpConnector extends AbstractConnector
     public AmqpConnector(final MuleContext context)
     {
         super(context);
+
+        receiveTransformer = new AmqpMessageToObject();
+        receiveTransformer.setMuleContext(context);
     }
 
     @Override
@@ -206,10 +220,10 @@ public class AmqpConnector extends AbstractConnector
     {
         final List<Address> brokerAddresses = new ArrayList<Address>();
         brokerAddresses.add(new Address(host, port));
-
         addFallbackAddresses(brokerAddresses);
-
         connection = connectionFactory.newConnection(brokerAddresses.toArray(new Address[0]));
+
+        configureDefaultReturnListener();
 
         connectorConnection = new ConnectorConnection(this);
     }
@@ -235,6 +249,28 @@ public class AmqpConnector extends AbstractConnector
             {
                 logger.warn("Ignoring unparseable fallback address: " + fallbackAddress);
             }
+        }
+    }
+
+    private void configureDefaultReturnListener() throws InitialisationException
+    {
+        if (defaultReturnEndpointBuilder == null)
+        {
+            defaultReturnListener = AmqpReturnHandler.DEFAULT_RETURN_LISTENER;
+            return;
+        }
+
+        try
+        {
+            final MessageProcessor defaultReturnEndpoint = defaultReturnEndpointBuilder.buildOutboundEndpoint();
+            defaultReturnListener = new AmqpReturnHandler.DispatchingReturnListener(
+                Collections.singletonList(defaultReturnEndpoint), this);
+            logger.info(String.format("Configured default return endpoint: %s", defaultReturnListener));
+        }
+        catch (final EndpointException ee)
+        {
+            throw new InitialisationException(
+                MessageFactory.createStaticMessage("Failed to configure default return endpoint"), ee, this);
         }
     }
 
@@ -384,6 +420,11 @@ public class AmqpConnector extends AbstractConnector
         }
     }
 
+    public void setDefaultReturnEndpoint(final EndpointBuilder defaultReturnEndpointBuilder)
+    {
+        this.defaultReturnEndpointBuilder = defaultReturnEndpointBuilder;
+    }
+
     @Override
     public ReplyToHandler getReplyToHandler(final ImmutableEndpoint endpoint)
     {
@@ -393,6 +434,11 @@ public class AmqpConnector extends AbstractConnector
     public Connection getConnection()
     {
         return connection;
+    }
+
+    public Transformer getReceiveTransformer()
+    {
+        return receiveTransformer;
     }
 
     public String getProtocol()

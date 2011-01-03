@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+  xmlns:test="http://www.mulesoft.org/schema/mule/test"
+  xsi:schemaLocation="
+       http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.1/mule.xsd
+       http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/3.1/mule-amqp.xsd
+       http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/3.1/mule-vm.xsd
+       http://www.mulesoft.org/schema/mule/test http://www.mulesoft.org/schema/mule/test/3.1/mule-test.xsd">
+
+  <vm:endpoint name="globalReturnedMessageChannel" path="global.returnedMessages" />
+  <vm:endpoint name="flowReturnedMessageChannel" path="flow.returnedMessages" />
+
+  <amqp:connector name="mandatoryAmqpConnector"
+    virtualHost="mule-test" username="mule" password="elum" mandatory="true"
+    default-return-endpoint-ref="globalReturnedMessageChannel" />
+
+  <bridge name="amqpMandatoryDeliveryWithGlobalHandlerSuccess" exchange-pattern="one-way">
+    <vm:inbound-endpoint path="amqpMandatoryDeliveryWithGlobalHandlerSuccess.in">
+      <!-- Carry a custom inbound property to the outbound scope so it is 
+        preserved in the rest of the message processing flow -->
+      <message-properties-transformer
+        scope="outbound">
+        <add-message-property key="customHeader"
+          value="#[header:INBOUND:customHeader]" />
+      </message-properties-transformer>
+    </vm:inbound-endpoint>
+    <!-- A queue is bound to this exchange so this should succeed -->
+    <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliveryWithGlobalHandlerSuccess-exchange" />
+  </bridge>
+
+  <flow name="amqpMandatoryDeliveryFailureGlobalHandler">
+    <vm:inbound-endpoint path="amqpMandatoryDeliveryFailureGlobalHandler.in" />
+
+    <!-- No queue is bound to this exchange so this should fail -->
+    <amqp:outbound-endpoint
+      exchangeName="amqpMandatoryDeliveryFailureGlobalHandler-exchange" />
+  </flow>
+
+  <flow name="amqpMandatoryDeliveryFailureFlowHandler">
+    <vm:inbound-endpoint path="amqpMandatoryDeliveryFailureFlowHandler.in" />
+
+    <amqp:return-handler>
+      <vm:outbound-endpoint ref="flowReturnedMessageChannel" />
+    </amqp:return-handler>
+
+    <!-- No queue is bound to this exchange so this should fail -->
+    <amqp:outbound-endpoint
+      exchangeName="amqpMandatoryDeliveryFailureFlowHandler-exchange" />
+  </flow>
+
+  <flow name="globalReturnedMessageProcessor">
+    <inbound-endpoint ref="globalReturnedMessageChannel" />
+    <test:component />
+  </flow>
+
+  <flow name="flowReturnedMessageProcessor">
+    <inbound-endpoint ref="flowReturnedMessageChannel" />
+    <test:component />
+  </flow>
+</mule>

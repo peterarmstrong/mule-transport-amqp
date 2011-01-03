@@ -11,18 +11,14 @@
 package org.mule.transport.amqp;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleMessage;
 import org.mule.api.endpoint.OutboundEndpoint;
-import org.mule.api.processor.MessageProcessor;
-import org.mule.api.transformer.Transformer;
 import org.mule.api.transport.DispatchException;
 import org.mule.config.i18n.MessageFactory;
 import org.mule.transport.AbstractMessageDispatcher;
 import org.mule.transport.amqp.AmqpConnector.OutboundConnection;
-import org.mule.transport.amqp.transformers.AmqpMessageToObject;
 import org.mule.util.StringUtils;
 
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
@@ -36,7 +32,6 @@ import com.rabbitmq.client.ReturnListener;
 public class AmqpMessageDispatcher extends AbstractMessageDispatcher
 {
     protected final AmqpConnector amqpConnector;
-    protected final Transformer receiveTransformer;
     protected OutboundConnection outboundConnection;
 
     protected enum OutboundAction
@@ -87,8 +82,6 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
     {
         super(endpoint);
         amqpConnector = (AmqpConnector) endpoint.getConnector();
-        receiveTransformer = new AmqpMessageToObject();
-        receiveTransformer.setMuleContext(connector.getMuleContext());
     }
 
     @Override
@@ -119,7 +112,7 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
     public MuleMessage doSend(final MuleEvent event) throws Exception
     {
         final MuleMessage resultMessage = createMuleMessage(doOutboundAction(event, OutboundAction.SEND));
-        resultMessage.applyTransformers(event, receiveTransformer);
+        resultMessage.applyTransformers(event, amqpConnector.getReceiveTransformer());
         return resultMessage;
     }
 
@@ -172,30 +165,25 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
      */
     protected void setReturnListenerIfNeeded(final MuleEvent event, final Channel channel)
     {
-        final List<MessageProcessor> returnMessageProcessors = event.getMessage().getInvocationProperty(
-            AmqpConstants.RETURN_MESSAGE_PROCESSORS);
+        final ReturnListener returnListener = event.getMessage().getInvocationProperty(
+            AmqpConstants.RETURN_LISTENER);
 
-        if ((returnMessageProcessors == null) || (returnMessageProcessors.isEmpty()))
+        if (returnListener == null)
         {
-            // no return message processor defined in the flow that encompasses the event
+            // no return listener defined in the flow that encompasses the event
             return;
         }
 
-        final ReturnListener currentReturnListener = channel.getReturnListener();
-        if ((currentReturnListener != null)
-            && (!currentReturnListener.equals(AmqpReturnHandler.DEFAULT_RETURN_LISTENER)))
+        if (returnListener instanceof AmqpReturnHandler.DispatchingReturnListener)
         {
-            // this channel already has a return listener that is not the default one, don't change it
-            return;
+            ((AmqpReturnHandler.DispatchingReturnListener) returnListener).setAmqpConnector(amqpConnector);
         }
 
-        channel.setReturnListener(new AmqpReturnHandler.DispatchingReturnListener(amqpConnector,
-            returnMessageProcessors, receiveTransformer, event));
+        channel.setReturnListener(returnListener);
 
         if (logger.isDebugEnabled())
         {
-            logger.debug(String.format("Set return message processors: %s on channel: %s",
-                returnMessageProcessors, channel));
+            logger.debug(String.format("Set return listener: %s on channel: %s", returnListener, channel));
         }
     }
 

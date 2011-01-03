@@ -78,5 +78,5 @@ public abstract class AmqpConstants
 
     // technical properties not intended to be messed with directly
     public static final String CHANNEL = AmqpConnector.AMQP + ".channel";
-    public static final String RETURN_MESSAGE_PROCESSORS = AmqpConnector.AMQP + ".return.message.processors";
+    public static final String RETURN_LISTENER = AmqpConnector.AMQP + ".return.message.processors";
 }

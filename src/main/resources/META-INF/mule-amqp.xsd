@@ -146,6 +146,13 @@
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
+        <xsd:attribute name="default-return-endpoint-ref" type="xsd:string">
+          <xsd:annotation>
+            <xsd:documentation>
+            Reference to an endpoint to which AMQP returned message should be dispatched to.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
         <xsd:attribute name="ackMode" default="AMQP_AUTO">
           <xsd:annotation>
             <xsd:documentation>

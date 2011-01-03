@@ -15,11 +15,13 @@ Features
 - Outbound request-response pattern supported via temporary reply queues.
 - Synchronous Message requesting with time-out.
 - Passive or active-only exchange and queue declaration.
+- Support for connection fallback accross a list of AMQP hosts.
 - Support of all AMQP's message properties, including custom headers.
 - Support of reply to (publishing replies to the default exchange).
 - Support of automatic, Mule-driven and manual message acknowledgment.
 - Support of the default exchange semantics in outbound endpoints.
 - Support for mandatory and immediate publish parameters and handling of returned (undelivered) messages.
+
 
 Integration Testing
 -------------------

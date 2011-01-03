@@ -19,6 +19,7 @@ import org.mule.config.spring.parsers.MuleDefinitionParser;
 import org.mule.config.spring.parsers.assembly.configuration.PrefixValueMap;
 import org.mule.config.spring.parsers.delegate.AbstractSingleParentFamilyDefinitionParser;
 import org.mule.config.spring.parsers.generic.AttributePropertiesDefinitionParser;
+import org.mule.config.spring.parsers.generic.ChildDefinitionParser;
 import org.mule.config.spring.parsers.processors.BlockAttribute;
 import org.mule.config.spring.parsers.processors.CheckRequiredAttributes;
 import org.mule.config.spring.parsers.specific.MessageProcessorDefinitionParser;
@@ -61,6 +62,9 @@ public class AmqpNamespaceHandler extends AbstractMuleNamespaceHandler
 
         registerBeanDefinitionParser("return-handler", new MessageProcessorDefinitionParser(
             AmqpReturnHandler.class));
+
+        registerBeanDefinitionParser("dispatching-return-listener", new ChildDefinitionParser(
+            "returnListener", AmqpReturnHandler.DispatchingReturnListener.class));
     }
 
     protected void registerAmqpTransportEndpoints()
