@@ -96,6 +96,8 @@ public class AmqpConnector extends AbstractConnector
                     }
                 });
 
+                channel.setReturnListener(AmqpReturnHandler.DEFAULT_RETURN_LISTENER);
+
                 return channel;
             }
             catch (final IOException ioe)

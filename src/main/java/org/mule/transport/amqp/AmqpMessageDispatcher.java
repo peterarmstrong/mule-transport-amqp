@@ -13,22 +13,18 @@ package org.mule.transport.amqp;
 import java.io.IOException;
 import java.util.List;
 
-import org.mule.DefaultMuleEvent;
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleMessage;
-import org.mule.api.endpoint.ImmutableEndpoint;
 import org.mule.api.endpoint.OutboundEndpoint;
 import org.mule.api.processor.MessageProcessor;
 import org.mule.api.transformer.Transformer;
 import org.mule.api.transport.DispatchException;
 import org.mule.config.i18n.MessageFactory;
-import org.mule.session.DefaultMuleSession;
 import org.mule.transport.AbstractMessageDispatcher;
 import org.mule.transport.amqp.AmqpConnector.OutboundConnection;
 import org.mule.transport.amqp.transformers.AmqpMessageToObject;
 import org.mule.util.StringUtils;
 
-import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ReturnListener;
@@ -185,56 +181,16 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
             return;
         }
 
-        if (channel.getReturnListener() != null)
+        final ReturnListener currentReturnListener = channel.getReturnListener();
+        if ((currentReturnListener != null)
+            && (!currentReturnListener.equals(AmqpReturnHandler.DEFAULT_RETURN_LISTENER)))
         {
-            // this channel already has a return listener, don't change it
+            // this channel already has a return listener that is not the default one, don't change it
             return;
         }
 
-        channel.setReturnListener(new ReturnListener()
-        {
-            public void handleBasicReturn(final int replyCode,
-                                          final java.lang.String replyText,
-                                          final java.lang.String exchange,
-                                          final java.lang.String routingKey,
-                                          final AMQP.BasicProperties properties,
-                                          final byte[] body) throws IOException
-            {
-                final String errorMessage = String.format(
-                    "AMQP returned message with code: %d, reason: %s, exchange: %s, routing key: %s",
-                    replyCode, replyText, exchange, routingKey);
-
-                final AmqpMessage returnedAmqpMessage = new AmqpMessage(null, null, properties, body);
-
-                try
-                {
-                    // thread safe copy of the message
-                    final MuleMessage returnedMuleMessage = amqpConnector.getMuleMessageFactory().create(
-                        returnedAmqpMessage,
-                        amqpConnector.getMuleContext().getConfiguration().getDefaultEncoding());
-
-                    for (final MessageProcessor returnMessageProcessor : returnMessageProcessors)
-                    {
-                        final ImmutableEndpoint returnEndpoint = returnMessageProcessor instanceof ImmutableEndpoint
-                                                                                                                    ? (ImmutableEndpoint) returnMessageProcessor
-                                                                                                                    : endpoint;
-
-                        final DefaultMuleEvent returnedMuleEvent = new DefaultMuleEvent(returnedMuleMessage,
-                            returnEndpoint, new DefaultMuleSession(event.getFlowConstruct(),
-                                amqpConnector.getMuleContext()));
-
-                        returnedMuleMessage.applyTransformers(returnedMuleEvent, receiveTransformer);
-
-                        returnMessageProcessor.process(returnedMuleEvent);
-                    }
-                }
-                catch (final Exception e)
-                {
-                    logger.error(String.format("Impossible to handle AMQP return: %s%n%s", errorMessage,
-                        returnedAmqpMessage), e);
-                }
-            }
-        });
+        channel.setReturnListener(new AmqpReturnHandler.DispatchingReturnListener(amqpConnector,
+            returnMessageProcessors, receiveTransformer, event));
 
         if (logger.isDebugEnabled())
         {
