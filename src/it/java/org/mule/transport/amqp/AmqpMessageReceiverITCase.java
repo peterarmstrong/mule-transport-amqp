@@ -31,6 +31,7 @@ public class AmqpMessageReceiverITCase extends AbstractAmqpITCase
         setupExchange("amqpNewQueueRedeclaredExistingExchangeService");
         setupExchangeAndQueue("amqpMuleAckService");
         setupExchangeAndQueue("amqpManualAckService");
+        setupExchangeAndQueue("amqpExclusiveConsumerService");
     }
 
     @Override
@@ -72,6 +73,11 @@ public class AmqpMessageReceiverITCase extends AbstractAmqpITCase
     public void testManualAcknowledgment() throws Exception
     {
         dispatchTestMessageAndAssertValidReceivedMessage("amqpManualAckService");
+    }
+
+    public void testExclusiveConsumer() throws Exception
+    {
+        dispatchTestMessageAndAssertValidReceivedMessage("amqpExclusiveConsumerService");
     }
 
     private void dispatchTestMessageAndAssertValidReceivedMessage(final String flowName)

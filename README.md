@@ -14,7 +14,7 @@ Features
 - Outbound message publication to existing or declared exchanges.
 - Outbound request-response pattern supported via temporary reply queues.
 - Synchronous Message requesting with time-out.
-- Passive or active-only exchange and queue declaration.
+- Passive or active-only exchange and queue declarations.
 - Support for connection fallback accross a list of AMQP hosts.
 - Support of all AMQP's message properties, including custom headers.
 - Support of reply to (publishing replies to the default exchange).
@@ -22,6 +22,7 @@ Features
 - Support of the default exchange semantics in outbound endpoints.
 - Support for mandatory and immediate publish parameters and handling of returned (undelivered) messages.
 - Support for prefetch size and count "quality of service" settings.
+- Support for noLocal and exclusive consumers.
 
 
 Integration Testing

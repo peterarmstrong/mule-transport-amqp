@@ -16,6 +16,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.pool.BasePoolableObjectFactory;
+import org.apache.commons.pool.impl.StackObjectPool;
 import org.mule.api.MuleContext;
 import org.mule.api.MuleException;
 import org.mule.api.MuleMessage;
@@ -76,10 +78,12 @@ public class AmqpConnector extends AbstractConnector
     private EndpointBuilder defaultReturnEndpointBuilder;
     private int prefetchSize;
     private int prefetchCount;
+    private boolean noLocal;
+    private boolean exclusiveConsumers;
 
     private ConnectionFactory connectionFactory;
     private Connection connection;
-    private ConnectorConnection connectorConnection;
+    private final StackObjectPool connectorConnectionPool;
 
     private static abstract class AmqpConnection
     {
@@ -123,6 +127,11 @@ public class AmqpConnector extends AbstractConnector
                                                        + amqpConnector.getConnection()), ioe, amqpConnector));
                 return null;
             }
+        }
+
+        public AmqpConnector getAmqpConnector()
+        {
+            return amqpConnector;
         }
 
         public Channel getChannel()
@@ -195,12 +204,44 @@ public class AmqpConnector extends AbstractConnector
         }
     }
 
+    private static class ConnectorConnectionPoolableObjectFactory extends BasePoolableObjectFactory
+    {
+        private final AmqpConnector amqpConnector;
+
+        private ConnectorConnectionPoolableObjectFactory(final AmqpConnector amqpConnector)
+        {
+            this.amqpConnector = amqpConnector;
+        }
+
+        @Override
+        public Object makeObject() throws Exception
+        {
+            return new ConnectorConnection(amqpConnector);
+        }
+
+        @Override
+        public void destroyObject(final Object obj) throws Exception
+        {
+            ((ConnectorConnection) obj).getChannel().close();
+        }
+    }
+
+    private interface ConnectorConnectionAction<T>
+    {
+        public T run(ConnectorConnection connectorConnection) throws Exception;
+    }
+
     public AmqpConnector(final MuleContext context)
     {
         super(context);
 
         receiveTransformer = new AmqpMessageToObject();
         receiveTransformer.setMuleContext(context);
+
+        final int maxIdle = 1;
+        final int initIdleCapacity = 0;
+        connectorConnectionPool = new StackObjectPool(new ConnectorConnectionPoolableObjectFactory(this),
+            maxIdle, initIdleCapacity);
     }
 
     @Override
@@ -215,7 +256,14 @@ public class AmqpConnector extends AbstractConnector
     @Override
     public void doDispose()
     {
-        connectorConnection = null;
+        try
+        {
+            connectorConnectionPool.close();
+        }
+        catch (final Exception e)
+        {
+            logger.error("Can't close the connector connection pool", e);
+        }
         connection = null;
         connectionFactory = null;
     }
@@ -229,8 +277,6 @@ public class AmqpConnector extends AbstractConnector
         connection = connectionFactory.newConnection(brokerAddresses.toArray(new Address[0]));
 
         configureDefaultReturnListener();
-
-        connectorConnection = new ConnectorConnection(this);
     }
 
     private void addFallbackAddresses(final List<Address> brokerAddresses)
@@ -282,7 +328,7 @@ public class AmqpConnector extends AbstractConnector
     @Override
     public void doDisconnect() throws Exception
     {
-        connectorConnection.getChannel().close();
+        connectorConnectionPool.clear();
         connection.close();
     }
 
@@ -318,51 +364,90 @@ public class AmqpConnector extends AbstractConnector
         return connect(messageRequester, messageRequester.getEndpoint());
     }
 
+    private <T> T runConnectorConnectionAction(final ConnectorConnectionAction<T> action) throws Exception
+    {
+        ConnectorConnection connectorConnection = null;
+
+        try
+        {
+            connectorConnection = (ConnectorConnection) connectorConnectionPool.borrowObject();
+            return action.run(connectorConnection);
+        }
+        finally
+        {
+            if (connectorConnection != null)
+            {
+                try
+                {
+                    connectorConnectionPool.returnObject(connectorConnection);
+                }
+                catch (final Exception e)
+                {
+                    logger.error("Can't return a borrowed connector connection", e);
+                }
+            }
+        }
+    }
+
     private InboundConnection connect(final Connectable connectable, final InboundEndpoint inboundEndpoint)
         throws ConnectException
     {
         try
         {
-            final String queueName = AmqpEndpointUtil.getOrCreateQueue(connectorConnection.getChannel(),
-                inboundEndpoint, activeDeclarationsOnly);
-            return new InboundConnection(this, queueName);
+            return runConnectorConnectionAction(new ConnectorConnectionAction<InboundConnection>()
+            {
+                @Override
+                public InboundConnection run(final ConnectorConnection connectorConnection) throws Exception
+                {
+                    final String queueName = AmqpEndpointUtil.getOrCreateQueue(
+                        connectorConnection.getChannel(), inboundEndpoint, activeDeclarationsOnly);
+                    return new InboundConnection(connectorConnection.getAmqpConnector(), queueName);
+                }
+            });
         }
-        catch (final IOException ioe)
+        catch (final Exception e)
         {
             throw new ConnectException(
                 MessageFactory.createStaticMessage("Error when connecting inbound endpoint: "
-                                                   + inboundEndpoint), ioe, connectable);
+                                                   + inboundEndpoint), e, connectable);
         }
     }
 
     public OutboundConnection connect(final MessageDispatcher messageDispatcher) throws ConnectException
     {
-
         final OutboundEndpoint outboundEndpoint = messageDispatcher.getEndpoint();
 
         try
         {
-            String routingKey = AmqpEndpointUtil.getRoutingKey(outboundEndpoint);
-            final String exchange = AmqpEndpointUtil.getOrCreateExchange(connectorConnection.getChannel(),
-                outboundEndpoint, activeDeclarationsOnly);
-
-            // handle dispatching to default exchange
-            if ((StringUtils.isBlank(exchange)) && (StringUtils.isBlank(routingKey)))
+            return runConnectorConnectionAction(new ConnectorConnectionAction<OutboundConnection>()
             {
-                final String queueName = AmqpEndpointUtil.getQueueName(outboundEndpoint.getAddress());
-                if (StringUtils.isNotBlank(queueName))
+                @Override
+                public OutboundConnection run(final ConnectorConnection connectorConnection) throws Exception
                 {
-                    routingKey = queueName;
-                }
-            }
+                    String routingKey = AmqpEndpointUtil.getRoutingKey(outboundEndpoint);
+                    final String exchange = AmqpEndpointUtil.getOrCreateExchange(
+                        connectorConnection.getChannel(), outboundEndpoint, activeDeclarationsOnly);
 
-            return new OutboundConnection(this, exchange, routingKey);
+                    // handle dispatching to default exchange
+                    if ((StringUtils.isBlank(exchange)) && (StringUtils.isBlank(routingKey)))
+                    {
+                        final String queueName = AmqpEndpointUtil.getQueueName(outboundEndpoint.getAddress());
+                        if (StringUtils.isNotBlank(queueName))
+                        {
+                            routingKey = queueName;
+                        }
+                    }
+
+                    return new OutboundConnection(connectorConnection.getAmqpConnector(), exchange,
+                        routingKey);
+                }
+            });
         }
-        catch (final IOException ioe)
+        catch (final Exception e)
         {
             throw new ConnectException(
                 MessageFactory.createStaticMessage("Error when connecting outbound endpoint: "
-                                                   + outboundEndpoint), ioe, messageDispatcher);
+                                                   + outboundEndpoint), e, messageDispatcher);
         }
     }
 
@@ -554,5 +639,25 @@ public class AmqpConnector extends AbstractConnector
     public void setPrefetchCount(final int prefetchCount)
     {
         this.prefetchCount = prefetchCount;
+    }
+
+    public boolean isNoLocal()
+    {
+        return noLocal;
+    }
+
+    public void setNoLocal(final boolean noLocal)
+    {
+        this.noLocal = noLocal;
+    }
+
+    public boolean isExclusiveConsumers()
+    {
+        return exclusiveConsumers;
+    }
+
+    public void setExclusiveConsumers(final boolean exclusiveConsumers)
+    {
+        this.exclusiveConsumers = exclusiveConsumers;
     }
 }

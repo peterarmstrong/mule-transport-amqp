@@ -23,6 +23,12 @@
                   username="mule"
                   password="elum"
                   ackMode="MANUAL" />
+                  
+  <amqp:connector name="amqpExclusiveLocalhostConnector"
+                  virtualHost="mule-test"
+                  username="mule"
+                  password="elum"
+                  exclusiveConsumers="true" />
 
   <flow name="amqpExistingQueueService">
     <!-- Use an existing queue -->
@@ -92,4 +98,10 @@
     <amqp:acknowledge-message />
   </flow>
   
+  <flow name="amqpExclusiveConsumerService">
+    <!-- Use a connector configured for creating exclusive consumers only -->
+    <amqp:inbound-endpoint queueName="amqpExclusiveConsumerService-queue"
+                           connector-ref="amqpExclusiveLocalhostConnector" />
+    <test:component />
+  </flow>
 </mule>

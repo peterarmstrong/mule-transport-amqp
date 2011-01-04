@@ -72,7 +72,7 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
 
         // there is no queue bound to this new exchange, so we can only test its presence
         int attempts = 0;
-        while (attempts < DEFAULT_MULE_TEST_TIMEOUT_SECS * 2)
+        while (attempts++ < DEFAULT_MULE_TEST_TIMEOUT_SECS * 2)
         {
             try
             {
@@ -81,7 +81,6 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
             }
             catch (final IOException ioe)
             {
-                attempts++;
                 Thread.sleep(500L);
             }
         }

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp"
+  xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+  xmlns:test="http://www.mulesoft.org/schema/mule/test"
+  xsi:schemaLocation="
+       http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.1/mule.xsd
+       http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/3.1/mule-amqp.xsd
+       http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/3.1/mule-vm.xsd
+       http://www.mulesoft.org/schema/mule/test http://www.mulesoft.org/schema/mule/test/3.1/mule-test.xsd">
+
+  <amqp:connector name="amqpConnector"
+                  virtualHost="mule-test"
+                  username="mule"
+                  password="elum" />
+
+  <amqp:connector name="amqpThrottledConnector"
+                  virtualHost="mule-test"
+                  username="mule"
+                  password="elum"
+                  prefetchCount="1"
+                  ackMode="MANUAL" />
+                  
+  <bridge name="amqpOneWayBridge" exchange-pattern="one-way">
+    <amqp:inbound-endpoint queueName="amqpOneWayBridge-queue"
+                           connector-ref="amqpConnector" />
+    <amqp:outbound-endpoint exchangeName="amqpOneWayBridgeTarget-exchange"
+                            connector-ref="amqpConnector" />
+  </bridge>
+                  
+  <flow name="amqpThrottledBridge">
+    <amqp:inbound-endpoint queueName="amqpThrottledBridge-queue"
+                           connector-ref="amqpThrottledConnector" />
+    <amqp:outbound-endpoint exchangeName="amqpThrottledBridgeTarget-exchange"
+                            connector-ref="amqpConnector" />
+   <amqp:acknowledge-message /> 
+  </flow>
+  
+  <flow name="amqpThrottledBridgeTarget">
+    <amqp:inbound-endpoint queueName="amqpThrottledBridgeTarget-queue"
+                           connector-ref="amqpConnector" />
+    <test:component />
+  </flow>
+                  
+  <model>
+    <!-- use a service because flows are not supporting reply-to as of 3.1 -->
+    <service name="amqpRequestResponseBridge">
+      <inbound>
+        <amqp:inbound-endpoint queueName="amqpRequestResponseBridge-queue"
+                               exchange-pattern="request-response"
+                               connector-ref="amqpConnector" />
+      </inbound>
+      <outbound>
+        <pass-through-router>
+          <amqp:outbound-endpoint exchangeName="amqpRequestResponseBridgeTarget-exchange"
+                                  exchange-pattern="request-response"
+                                  connector-ref="amqpConnector" />
+        </pass-through-router>
+      </outbound>
+    </service>
+  
+    <service name="amqpRequestResponseBridgeTargetService">
+      <inbound>
+        <amqp:inbound-endpoint exchangeName="amqpRequestResponseBridgeTarget-exchange"
+                               exchangeType="fanout"
+                               exchangeAutoDelete="false"
+                               exchangeDurable="false"
+                               queueName="amqpRequestResponseBridgeTarget-queue"
+                               queueDurable="false"
+                               queueExclusive="false"
+                               queueAutoDelete="true"
+                               connector-ref="amqpConnector" />
+      </inbound>
+      <test:component appendString="-response" />
+    </service>
+  </model>
+</mule>

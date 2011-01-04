@@ -17,6 +17,7 @@ import javax.resource.spi.work.WorkException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.mule.MessageExchangePattern;
 import org.mule.api.MuleMessage;
 import org.mule.api.MuleRuntimeException;
 import org.mule.api.construct.FlowConstruct;
@@ -91,6 +92,7 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
         try
         {
             consumerTag = getChannel().basicConsume(getQueueName(), amqpConnector.getAckMode().isAutoAck(),
+                StringUtils.EMPTY, amqpConnector.isNoLocal(), amqpConnector.isExclusiveConsumers(), null,
                 new DefaultConsumer(getChannel())
                 {
                     @Override
@@ -204,6 +206,14 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
             try
             {
                 final MuleMessage muleMessage = createMuleMessage(amqpMessage);
+
+                if ((getEndpoint().getExchangePattern() == MessageExchangePattern.REQUEST_RESPONSE)
+                    && (muleMessage.getReplyTo() == null))
+                {
+                    logger.warn(String.format(
+                        "Impossible to honor the request-response exchange pattern of %s for AMQP message without reply to: %s",
+                        getEndpoint(), muleMessage));
+                }
 
                 if (amqpConnector.getAckMode() == AckMode.MANUAL)
                 {

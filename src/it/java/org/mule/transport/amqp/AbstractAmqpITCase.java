@@ -28,6 +28,7 @@ import org.mule.tck.functional.FunctionalTestComponent;
 import org.mule.util.UUID;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.AMQP.Queue.DeclareOk;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -74,7 +75,7 @@ public abstract class AbstractAmqpITCase extends FunctionalTestCase
     {
         Channel channel = channelRef.get();
 
-        if (channel != null)
+        if ((channel != null) && (channel.isOpen()))
         {
             return channel;
         }
@@ -193,6 +194,17 @@ public abstract class AbstractAmqpITCase extends FunctionalTestCase
         return flowName + "-exchange";
     }
 
+    protected Delivery sendMessageWithAmqp(final String correlationId,
+                                           final byte[] body,
+                                           final String flowName,
+                                           final long timeout) throws IOException, InterruptedException
+    {
+        final DeclareOk declareOk = getChannel().queueDeclare();
+        final String queue = declareOk.getQueue();
+        publishMessageWithAmqp(correlationId, body, flowName, queue);
+        return consumeMessageWithAmqp(queue, timeout);
+    }
+
     protected String publishMessageWithAmqp(final byte[] body, final String flowName) throws IOException
     {
         return publishMessageWithAmqp(body, flowName, null);
@@ -202,13 +214,21 @@ public abstract class AbstractAmqpITCase extends FunctionalTestCase
         throws IOException
     {
         final String correlationId = UUID.getUUID();
+        publishMessageWithAmqp(correlationId, body, flowName, replyTo);
+        return correlationId;
+    }
+
+    protected void publishMessageWithAmqp(final String correlationId,
+                                          final byte[] body,
+                                          final String flowName,
+                                          final String replyTo) throws IOException
+    {
         final BasicProperties props = new BasicProperties();
         props.setContentType("text/plain");
         props.setCorrelationId(correlationId);
         props.setReplyTo(replyTo);
         props.setHeaders(Collections.<String, Object> singletonMap("customHeader", 123L));
         getChannel().basicPublish(getExchangeName(flowName), "", props, body);
-        return correlationId;
     }
 
     protected Delivery consumeMessageWithAmqp(final String queue, final long timeout)
