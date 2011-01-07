@@ -52,8 +52,7 @@
           <xsd:annotation>
             <xsd:documentation>
               The port to use to connect to the main
-              AMQP
-              broker.
+              AMQP broker.
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
@@ -138,18 +137,26 @@
           default="false">
           <xsd:annotation>
             <xsd:documentation>
-              This flag tells the server how to react if the message cannot be
-              routed to a queue consumer immediately. If this flag is set to true, the server
-              will throw an exception for any undeliverable message. If
-              this flag is false, the server will queue the message, but
-              with no guarantee that it will ever be consumed.
+              This flag tells the server how to react
+              if the message cannot be
+              routed to a queue consumer
+              immediately. If this flag is set to true, the server
+              will
+              throw an exception for any undeliverable message. If
+              this
+              flag is false, the server will queue the message, but
+              with
+              no guarantee that it will ever be consumed.
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="default-return-endpoint-ref" type="xsd:string">
+        <xsd:attribute name="default-return-endpoint-ref"
+          type="xsd:string">
           <xsd:annotation>
             <xsd:documentation>
-            Reference to an endpoint to which AMQP returned message should be dispatched to.
+              Reference to an endpoint to which AMQP
+              returned message should be
+              dispatched to.
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
@@ -194,7 +201,8 @@
           default="0">
           <xsd:annotation>
             <xsd:documentation>
-              The maximum amount of content (measured in octets) that the server will deliver, 0 if unlimited.
+              The maximum amount of content (measured
+              in octets) that the server will deliver, 0 if unlimited.
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
@@ -202,7 +210,8 @@
           default="0">
           <xsd:annotation>
             <xsd:documentation>
-              The maximum number of messages that the server will deliver, 0 if unlimited.
+              The maximum number of messages that the
+              server will deliver, 0 if unlimited.
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
@@ -210,7 +219,9 @@
           default="false">
           <xsd:annotation>
             <xsd:documentation>
-              If the no-local field is set the server will not send messages to the connection that published them.
+              If the no-local field is set the server
+              will not send messages to the connection that published
+              them.
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
@@ -218,7 +229,8 @@
           default="false">
           <xsd:annotation>
             <xsd:documentation>
-              Set to true if the connector should only create exclusive consumers.
+              Set to true if the connector should only
+              create exclusive consumers.
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
@@ -274,16 +286,35 @@
     <xsd:attribute name="exchangeName" type="xsd:string">
       <xsd:annotation>
         <xsd:documentation>
+          The exchange to publish to or bind queues to.
           Leave blank or omit for the default exchange.
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
-    <xsd:attribute name="queueName" type="xsd:string" />
+    <xsd:attribute name="queueName" type="xsd:string">
+      <xsd:annotation>
+        <xsd:documentation>
+          The queue name to consume from. Leave blank
+          or omit for using a new private exclusive server-named queue.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
   </xsd:attributeGroup>
 
   <xsd:attributeGroup name="propertyAttributes">
-    <xsd:attribute name="routingKey" type="xsd:string" />
+    <xsd:attribute name="routingKey" type="xsd:string">
+      <xsd:annotation>
+        <xsd:documentation>
+          The routing key to use when binding a queue or publishing a message.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
     <xsd:attribute name="exchangeType">
+      <xsd:annotation>
+        <xsd:documentation>
+          The type of exchange to be declared.
+        </xsd:documentation>
+      </xsd:annotation>
       <xsd:simpleType>
         <xsd:restriction base="xsd:string">
           <xsd:enumeration value="fanout" />
@@ -293,20 +324,67 @@
         </xsd:restriction>
       </xsd:simpleType>
     </xsd:attribute>
-    <xsd:attribute name="exchangeDurable" type="mule:substitutableBoolean" />
-    <xsd:attribute name="exchangeAutoDelete" type="mule:substitutableBoolean" />
-    <xsd:attribute name="queueDurable" type="mule:substitutableBoolean" />
-    <xsd:attribute name="queueAutoDelete" type="mule:substitutableBoolean" />
-    <xsd:attribute name="queueExclusive" type="mule:substitutableBoolean" />
+    <xsd:attribute name="exchangeDurable" type="mule:substitutableBoolean">
+      <xsd:annotation>
+        <xsd:documentation>
+          The durability of the declared exchange.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="exchangeAutoDelete" type="mule:substitutableBoolean">
+      <xsd:annotation>
+        <xsd:documentation>
+          Specifies if the declared exchange should be
+          autodeleted.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="queueDurable" type="mule:substitutableBoolean">
+      <xsd:annotation>
+        <xsd:documentation>
+          Specifies if the declared queue is durable.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="queueAutoDelete" type="mule:substitutableBoolean">
+      <xsd:annotation>
+        <xsd:documentation>
+          Specifies if the declared queue should be
+          autodeleted.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
+    <xsd:attribute name="queueExclusive" type="mule:substitutableBoolean">
+      <xsd:annotation>
+        <xsd:documentation>
+          Specifies if the declared queue is exclusive.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
   </xsd:attributeGroup>
 
   <xsd:element name="acknowledge-message" type="basicAckType"
     substitutionGroup="mule:abstract-message-processor" />
   <xsd:complexType name="basicAckType">
+    <xsd:annotation>
+      <xsd:documentation>
+        Acknowledges the AMQP message that is currently
+        processed by Mule.
+      </xsd:documentation>
+    </xsd:annotation>
     <xsd:complexContent>
       <xsd:extension base="mule:abstractMessageProcessorType">
         <xsd:attribute name="multiple" type="mule:substitutableBoolean"
-          default="false" />
+          default="false">
+          <xsd:annotation>
+            <xsd:documentation>
+              Set to true to acknowledge all messages up to and including the
+              delivery tag of the AMQP message that is currently
+              processed by Mule; false to acknowledge just the current
+              message.
+      </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
       </xsd:extension>
     </xsd:complexContent>
   </xsd:complexType>
@@ -314,14 +392,19 @@
   <xsd:element name="return-handler" type="returnHandlerType"
     substitutionGroup="mule:abstract-message-processor" />
   <xsd:complexType name="returnHandlerType">
+    <xsd:annotation>
+      <xsd:documentation>Defines the strategy to use to handle messages returned by the AMQP broker.</xsd:documentation>
+    </xsd:annotation>
     <xsd:complexContent>
       <xsd:extension base="mule:abstractMessageProcessorType">
         <xsd:sequence>
-            <xsd:group ref="mule:messageProcessorOrOutboundEndpoint" minOccurs="0" maxOccurs="1">
-                <xsd:annotation>
-                    <xsd:documentation>Destination to which returned messages will be sent.</xsd:documentation>
-                </xsd:annotation>
-            </xsd:group>
+          <xsd:group ref="mule:messageProcessorOrOutboundEndpoint"
+            minOccurs="0" maxOccurs="1">
+            <xsd:annotation>
+              <xsd:documentation>Destination to which returned messages
+                will be sent.</xsd:documentation>
+            </xsd:annotation>
+          </xsd:group>
         </xsd:sequence>
       </xsd:extension>
     </xsd:complexContent>
