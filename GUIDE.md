@@ -253,6 +253,18 @@ Examples
 
 There are many ways to use the AMQP connector and endpoints. The following examples will demonstrate the common use cases.
 
+### Connection fallback
+
+It is possible to define a list of host:port or host (implying default port) to try to connect to in case the main one fails to connect.
+
+    <amqp:connector name="amqpConnectorWithFallback"
+                    host="rabbit1"
+                    port="9876"
+                    fallbackAddresses="rabbit1:9875,rabbit2:5672,rabbit3"
+                    virtualHost="mule-test"
+                    username="my-user"
+                    password="my-pwd" />
+
 ### Listen to messages with exchange re-declaration and queue creation
 
 This is a typical AMQP pattern where consumers redeclare the exchanges they intend to bind queues to.
@@ -301,13 +313,13 @@ This behavior is enforced by activeDeclarationsOnly=false, which means that Mule
                     password="my-pwd"
                     activeDeclarationsOnly="false" />
                     
-   <amqp:inbound-endpoint exchangeName="my-exchange"
-                          queueName="my-queue"
-                          queueDurable="false"
-                          queueExclusive="false"
-                          queueAutoDelete="true"
-                          queueName="my-queue"
-                          connector-ref="amqpAutoAckStrictLocalhostConnector" />
+    <amqp:inbound-endpoint exchangeName="my-exchange"
+                           queueName="my-queue"
+                           queueDurable="false"
+                           queueExclusive="false"
+                           queueAutoDelete="true"
+                           queueName="my-queue"
+                           connector-ref="amqpAutoAckStrictLocalhostConnector" />
 
 ### Listen to messages on a pre-existing queue
 
@@ -319,7 +331,50 @@ Similarly to the previous example, the inbound connection will fail if the queue
                     password="my-pwd"
                     activeDeclarationsOnly="false" />
                     
-   <amqp:inbound-endpoint queueName="my-queue"
-                          connector-ref="amqpAutoAckStrictLocalhostConnector" />
-                    
+    <amqp:inbound-endpoint queueName="my-queue"
+                           connector-ref="amqpAutoAckStrictLocalhostConnector" />
 
+### Manual message acknowledgement
+
+So far, all incoming messages were automatically acknowledged by the AMQP client.
+
+The following example shows how to manually acknowledge messages at the end of a flow.
+ 
+    <amqp:connector name="amqpManualAckLocalhostConnector"
+                    virtualHost="my-vhost"
+                    username="my-user"
+                    password="my-pwd"
+                    ackMode="MANUAL" />
+
+    <flow name="amqpManualAckService">
+      <amqp:inbound-endpoint queueName="my-queue"
+                             connector-ref="amqpManualAckLocalhostConnector" />
+      <!--
+      components, routers... go here
+      -->
+      <amqp:acknowledge-message />
+    </flow>
+
+### Flow control
+
+Expanding on the previous example, it is possible to throttle the delivery of messages by configuring the connector accordingly.
+
+The following demonstrates a connector that fetches messages one by one and a flow that uses manual acknowledgment to throttle the message delivery.
+
+    <amqp:connector name="amqpThrottledConnector"
+                    virtualHost="my-vhost"
+                    username="my-user"
+                    password="my-pwd"
+                    prefetchCount="1"
+                    ackMode="MANUAL" />
+
+    <flow name="amqpManualAckService">
+      <amqp:inbound-endpoint queueName="my-queue"
+                             connector-ref="amqpThrottledConnector" />
+      <!--
+      components, routers... go here
+      -->
+      <amqp:acknowledge-message />
+    </flow>
+ 
+ 
