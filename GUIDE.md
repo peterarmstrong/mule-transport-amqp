@@ -9,6 +9,11 @@ Configuration Reference
 	Generated with: http://svn.codehaus.org/mule/branches/mule-2.0.x/tools/schemadocs/src/main/resources/xslt/single-element.xsl
 	Parameter     : elementName=connector
 -->
+
+The AMQP connector defines what broker to connect to, which credentials to use when doing so and all the common properties used by the inbound and outbound endpoints using this connector.
+
+It is possible to create several connectors connected to the same broker for the purpose of having different sets of common properties that the endpoints will use. 
+
 <table class="confluenceTable">
   <th style="width:10%" class="confluenceTh">Name</th><th style="width:10%" class="confluenceTh">Type</th><th style="width:10%" class="confluenceTh">Required</th><th style="width:10%" class="confluenceTh">Default</th><th class="confluenceTh">Description</th>
   <tr>
@@ -166,6 +171,8 @@ Configuration Reference
 
 ### Endpoint Attributes
 
+Endpoint attributes are interpreted differently if they are used on inbound or outbound endpoints. For example, routingKey on an inbound endpoint is meant to be used for queue binding while it is used as basic publish parameter on outbound endpoints. 
+
 <!--
 	Generated with: http://svn.codehaus.org/mule/branches/mule-2.0.x/tools/schemadocs/src/main/resources/xslt/single-element.xsl
 	Parameter     : elementName=endpoint
@@ -243,3 +250,76 @@ Configuration Reference
 
 Examples
 --------
+
+There are many ways to use the AMQP connector and endpoints. The following examples will demonstrate the common use cases.
+
+### Listen to messages with exchange re-declaration and queue creation
+
+This is a typical AMQP pattern where consumers redeclare the exchanges they intend to bind queues to.
+
+    <amqp:connector name="amqpAutoAckLocalhostConnector"
+                    virtualHost="my-vhost"
+                    username="my-user"
+                    password="my-pwd"
+                    activeDeclarationsOnly="true" />
+
+    <amqp:inbound-endpoint exchangeName="my-exchange"
+                           exchangeType="fanout"
+                           exchangeAutoDelete="false"
+                           exchangeDurable="true"
+                           queueName="my-queue"
+                           queueDurable="false"
+                           queueExclusive="false"
+                           queueAutoDelete="true"
+                           connector-ref="amqpAutoAckLocalhostConnector" />
+
+### Listen to messages with exchange re-declaration and private queue creation
+
+In this variation of the previous example, Mule will create an exclusive server-named, auto-delete, non-durable queue and bind it to the re-declared exchange.
+
+    <amqp:connector name="amqpAutoAckLocalhostConnector"
+                    virtualHost="my-vhost"
+                    username="my-user"
+                    password="my-pwd"
+                    activeDeclarationsOnly="true" />
+
+    <amqp:inbound-endpoint exchangeName="my-exchange"
+                           exchangeType="fanout"
+                           exchangeAutoDelete="false"
+                           exchangeDurable="true"
+                           connector-ref="amqpAutoAckLocalhostConnector" />
+
+### Listen to messages on a pre-existing exchange
+
+In this mode, the inbound connection will fail if the exchange doesn't pre-exist.
+
+This behavior is enforced by activeDeclarationsOnly=false, which means that Mule will strictly ensure the pre-existence of the exchange before trying to subscribe to it. 
+
+    <amqp:connector name="amqpAutoAckStrictLocalhostConnector"
+                    virtualHost="my-vhost"
+                    username="my-user"
+                    password="my-pwd"
+                    activeDeclarationsOnly="false" />
+                    
+   <amqp:inbound-endpoint exchangeName="my-exchange"
+                          queueName="my-queue"
+                          queueDurable="false"
+                          queueExclusive="false"
+                          queueAutoDelete="true"
+                          queueName="my-queue"
+                          connector-ref="amqpAutoAckStrictLocalhostConnector" />
+
+### Listen to messages on a pre-existing queue
+
+Similarly to the previous example, the inbound connection will fail if the queue doesn't pre-exist.
+
+    <amqp:connector name="amqpAutoAckStrictLocalhostConnector"
+                    virtualHost="my-vhost"
+                    username="my-user"
+                    password="my-pwd"
+                    activeDeclarationsOnly="false" />
+                    
+   <amqp:inbound-endpoint queueName="my-queue"
+                          connector-ref="amqpAutoAckStrictLocalhostConnector" />
+                    
+
