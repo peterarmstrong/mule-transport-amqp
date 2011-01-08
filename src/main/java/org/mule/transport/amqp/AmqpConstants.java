@@ -105,24 +105,27 @@ public abstract class AmqpConstants
     {
         // generates the properties HTML tables used in the documentation
         final StringBuilder sb = new StringBuilder();
-        appendPropertiesTable("#### Basic Properties", AMQP_BASIC_PROPERTY_NAMES, sb);
-        appendPropertiesTable("#### Envelope Properties", AMQP_ENVELOPE_PROPERTY_NAMES, sb);
-        appendPropertiesTable("#### Technical Properties", AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES, sb);
-        System.out.println(sb.toString());
-    }
-
-    private static void appendPropertiesTable(final String label,
-                                              final Set<String> propertyNames,
-                                              final StringBuilder sb)
-    {
-        sb.append(label).append("\n\n");
         sb.append("<table>\n");
-        sb.append("<tr><th>Property Name</th></tr>");
-        for (final String propertyName : propertyNames)
+        sb.append("<tr><th>Basic Properties</th><th>Envelope Properties</th><th>Technical Properties</th></tr>\n");
+        for (int i = 0; i < AMQP_BASIC_PROPERTY_NAMES_ARRAY.length; i++)
         {
-            sb.append("<tr><td>").append(propertyName).append("</td></tr>");
+            sb.append("<tr>");
+            sb.append("<td>").append(AMQP_BASIC_PROPERTY_NAMES_ARRAY[i]).append("</td>");
+            sb.append("<td>")
+                .append(
+                    i < AMQP_ENVELOPE_PROPERTY_NAMES_ARRAY.length
+                                                                 ? AMQP_ENVELOPE_PROPERTY_NAMES_ARRAY[i]
+                                                                 : "")
+                .append("</td>");
+            sb.append("<td>")
+                .append(
+                    i < AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES_ARRAY.length
+                                                                            ? AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES_ARRAY[i]
+                                                                            : "")
+                .append("</td>");
+            sb.append("</tr>\n");
         }
         sb.append("</table>\n");
-
+        System.out.println(sb.toString());
     }
 }
