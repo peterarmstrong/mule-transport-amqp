@@ -86,12 +86,12 @@ public abstract class AmqpConstants
         Arrays.asList(AMQP_BASIC_PROPERTY_NAMES_ARRAY)));
 
     // technical properties not intended to be messed with directly
-    public static final String CHANNEL = AmqpConnector.AMQP + ".channel";
     public static final String CONSUMER_TAG = "consumer-tag";
+    public static final String CHANNEL = AmqpConnector.AMQP + ".channel";
     public static final String RETURN_LISTENER = AmqpConnector.AMQP + ".return.listener";
 
-    private static final String[] AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES_ARRAY = new String[]{CHANNEL,
-        CONSUMER_TAG, RETURN_LISTENER};
+    private static final String[] AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES_ARRAY = new String[]{CONSUMER_TAG,
+        CHANNEL, RETURN_LISTENER};
 
     public static final Set<String> AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES = Collections.unmodifiableSet(new HashSet<String>(
         Arrays.asList(AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES_ARRAY)));
@@ -117,10 +117,10 @@ public abstract class AmqpConstants
     {
         sb.append(label).append("\n\n");
         sb.append("<table>\n");
-        sb.append("<tr><th>Property Name</th><tr>");
+        sb.append("<tr><th>Property Name</th></tr>");
         for (final String propertyName : propertyNames)
         {
-            sb.append("<tr><td>").append(propertyName).append("</td><tr>");
+            sb.append("<tr><td>").append(propertyName).append("</td></tr>");
         }
         sb.append("</table>\n");
 

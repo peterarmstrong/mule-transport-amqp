@@ -51,15 +51,15 @@ Here is the list of properties supported by the transport:
 #### Basic Properties
 
 <table>
-<tr><th>Property Name</th><tr><tr><td>content-type</td><tr><tr><td>expiration</td><tr><tr><td>message-id</td><tr><tr><td>content-encoding</td><tr><tr><td>type</td><tr><tr><td>timestamp</td><tr><tr><td>priority</td><tr><tr><td>user-id</td><tr><tr><td>reply-to</td><tr><tr><td>app-id</td><tr><tr><td>correlation-id</td><tr><tr><td>delivery_mode</td><tr></table>
+<tr><th>Property Name</th></tr><tr><td>content-type</td></tr><tr><td>expiration</td></tr><tr><td>message-id</td></tr><tr><td>content-encoding</td></tr><tr><td>type</td></tr><tr><td>timestamp</td></tr><tr><td>priority</td></tr><tr><td>user-id</td></tr><tr><td>reply-to</td></tr><tr><td>app-id</td></tr><tr><td>correlation-id</td></tr><tr><td>delivery_mode</td></tr></table>
 #### Envelope Properties
 
 <table>
-<tr><th>Property Name</th><tr><tr><td>redelivered</td><tr><tr><td>delivery-tag</td><tr><tr><td>routing-key</td><tr><tr><td>exchange</td><tr></table>
+<tr><th>Property Name</th></tr><tr><td>redelivered</td></tr><tr><td>delivery-tag</td></tr><tr><td>routing-key</td></tr><tr><td>exchange</td></tr></table>
 #### Technical Properties
 
 <table>
-<tr><th>Property Name</th><tr><tr><td>amqp.return.listener</td><tr><tr><td>consumer-tag</td><tr><tr><td>amqp.channel</td><tr></table>
+<tr><th>Property Name</th></tr><tr><td>amqp.return.listener</td></tr><tr><td>amqp.channel</td></tr><tr><td>consumer-tag</td></tr></table>
 
 On top of that all custom headers defined in the AMQP basic properties are added as standard Mule properties.  
 
