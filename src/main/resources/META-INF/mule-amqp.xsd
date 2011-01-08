@@ -388,6 +388,29 @@
       </xsd:extension>
     </xsd:complexContent>
   </xsd:complexType>
+  
+  <xsd:element name="reject-message" type="basicRejectType"
+    substitutionGroup="mule:abstract-message-processor" />
+  <xsd:complexType name="basicRejectType">
+    <xsd:annotation>
+      <xsd:documentation>
+        Rejects the AMQP message that is currently
+        processed by Mule.
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexContent>
+      <xsd:extension base="mule:abstractMessageProcessorType">
+        <xsd:attribute name="requeue" type="mule:substitutableBoolean"
+          default="false">
+          <xsd:annotation>
+            <xsd:documentation>
+               Set to true if the rejected message should be requeued rather than discarded/dead-lettered.
+      </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
 
   <xsd:element name="return-handler" type="returnHandlerType"
     substitutionGroup="mule:abstract-message-processor" />

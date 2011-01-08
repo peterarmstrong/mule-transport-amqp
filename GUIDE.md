@@ -334,11 +334,11 @@ Similarly to the previous example, the inbound connection will fail if the queue
     <amqp:inbound-endpoint queueName="my-queue"
                            connector-ref="amqpAutoAckStrictLocalhostConnector" />
 
-### Manual message acknowledgement
+### Manual message acknowledgement and rejection
 
 So far, all incoming messages were automatically acknowledged by the AMQP client.
 
-The following example shows how to manually acknowledge messages at the end of a flow.
+The following example shows how to manually acknowledge or reject messages within a flow, based on criteria of your choice.
  
     <amqp:connector name="amqpManualAckLocalhostConnector"
                     virtualHost="my-vhost"
@@ -346,13 +346,17 @@ The following example shows how to manually acknowledge messages at the end of a
                     password="my-pwd"
                     ackMode="MANUAL" />
 
-    <flow name="amqpManualAckService">
+    <flow name="amqpChoiceAckNackService">
       <amqp:inbound-endpoint queueName="my-queue"
                              connector-ref="amqpManualAckLocalhostConnector" />
-      <!--
-      components, routers... go here
-      -->
-      <amqp:acknowledge-message />
+      <choice>
+        <when ...condition...>
+          <amqp:acknowledge-message />
+        </when>
+        <otherwise>
+          <amqp:reject-message requeue="true" />
+        </otherwise>
+      </choice>
     </flow>
 
 ### Flow control

@@ -19,10 +19,11 @@ Features
 - Support of all AMQP's message properties, including custom headers.
 - Support of reply to (publishing replies to the default exchange).
 - Support of automatic, Mule-driven and manual message acknowledgment.
+- Support of manual message rejection.
 - Support of the default exchange semantics in outbound endpoints.
-- Support for mandatory and immediate publish parameters and handling of returned (undelivered) messages.
-- Support for prefetch size and count "quality of service" settings.
-- Support for noLocal and exclusive consumers.
+- Support of mandatory and immediate publish parameters and handling of returned (undelivered) messages.
+- Support of prefetch size and count "quality of service" settings.
+- Support of noLocal and exclusive consumers.
 
 
 Integration Testing

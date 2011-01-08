@@ -31,6 +31,7 @@ public class AmqpMessageReceiverITCase extends AbstractAmqpITCase
         setupExchange("amqpNewQueueRedeclaredExistingExchangeService");
         setupExchangeAndQueue("amqpMuleAckService");
         setupExchangeAndQueue("amqpManualAckService");
+        setupExchangeAndQueue("amqpManualRejectService");
         setupExchangeAndQueue("amqpExclusiveConsumerService");
     }
 
@@ -73,6 +74,14 @@ public class AmqpMessageReceiverITCase extends AbstractAmqpITCase
     public void testManualAcknowledgment() throws Exception
     {
         dispatchTestMessageAndAssertValidReceivedMessage("amqpManualAckService");
+    }
+
+    public void testManualRejection() throws Exception
+    {
+        dispatchTestMessageAndAssertValidReceivedMessage("amqpManualRejectService");
+        // check the message has been successfully pushed back to the queue
+        assertNotNull(consumeMessageWithAmqp(getQueueName("amqpManualRejectService"),
+            DEFAULT_MULE_TEST_TIMEOUT_SECS));
     }
 
     public void testExclusiveConsumer() throws Exception

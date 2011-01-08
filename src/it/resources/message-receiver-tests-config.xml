@@ -91,11 +91,19 @@
   </flow>
 
   <flow name="amqpManualAckService">
-    <!-- Test the Mule-driven acknowledgment of messages -->
+    <!-- Test the manual acknowledgment of messages -->
     <amqp:inbound-endpoint queueName="amqpManualAckService-queue"
                            connector-ref="amqpManualAckLocalhostConnector" />
     <test:component />
     <amqp:acknowledge-message />
+  </flow>
+
+  <flow name="amqpManualRejectService">
+    <!-- Test the manual rejection of messages -->
+    <amqp:inbound-endpoint queueName="amqpManualRejectService-queue"
+                           connector-ref="amqpManualAckLocalhostConnector" />
+    <test:component />
+    <amqp:reject-message requeue="true" />
   </flow>
   
   <flow name="amqpExclusiveConsumerService">
