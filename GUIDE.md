@@ -4,7 +4,9 @@ Mule AMQP Transport - User Guide
 Welcome to AMQP
 ---------------
 
-*TBD*
+*TBD* Introduce: connection, channel, exchanges, queues and messages
+
+
 
 > ** AMQP for the JMS savvy **
 >
@@ -21,11 +23,25 @@ Welcome to AMQP
 Core Transport Principles
 -------------------------
 
-*TBD*
+The Mule AMQP Transport is an abstraction built on top of the previously introduced AMQP constructs: connection, channel, exchanges, queues and messages.
+
+The transport hides the low level concepts, like dealing with channels, but gives a great deal of control on all the constructs it encapsulates allowing you to experience the richness of AMQP without the need to code to its API.
+
+Here is a review of the main configuration elements and concepts you'll deal with when using the transport:
+
+- The *connector* element take care of establishing the connection to AMQP brokers, deals with channels and manages a set of common properties that will be shared by all consumers or publishers that will use this connector.
+TBD...
+- The *inbound endpoint* elements are in charge of defining...
+- The *outbound endpoint* elements are in charge of defining...
+
+TBD MuleMessage abstraction byte[]
+
 
 
 Configuration Reference
 -----------------------
+
+All the configuration parameters supported by the connector and endpoint configuration elements are described in this section.
 
 ### Connector Attributes
 <!--
@@ -512,3 +528,25 @@ In that case, Mule will:
 - set-it as the reply-to property of the current message,
 - publish the message to the specified exchange,
 - wait for a response to be sent to the reply-queue (via the default exchange).
+
+### Programmatic message requesting
+
+It is possible to programmatically get messages from an AMQP queue.
+
+For this you need first to build a URI that identifies the AMQP queue that you want to consume from. Here is the syntax to use, with optional parameters in square brackets:
+
+    amqp://[${exchangeName}/]amqp-queue.${queueName}[?connector=${connectorName}[&...other parameters...]]
+
+For example, the following identifies a prexisting queue named "my-queue" and will consume it with a unique AMQP connector available in the Mule configuration:
+
+    amqp://amqp-queue.my-queue
+
+This example will create and bind a non-durable auto-delete non-exclusive queue named "new-queue" to a pre-existing exchange named "my-exchange" with the provided routing key on the specified connector:
+
+    amqp://my-exchange/amqp-queue.new-queue?connector=amqpAutoAckLocalhostConnector&queueDurable=false&queueExclusive=false&queueAutoDelete=true
+
+With such a URI defined, it is possible to retrieve a message from the queue using the Mule Client, as shown in the following code sample:
+
+    MuleMessage message = new MuleClient(muleContext).request("amqp://amqp-queue.my-queue", 2500L);
+ 
+The above will wait for 2.5 seconds for a message and will return null if none has shown up in the queue after this amount of time.
