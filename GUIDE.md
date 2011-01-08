@@ -1,6 +1,24 @@
 Mule AMQP Transport - User Guide
 ================================
 
+Welcome to AMQP
+---------------
+
+*TBD*
+
+> ** AMQP for the JMS savvy **
+> If you're a Java developer, chances are you have been exposed to JMS and are wondering how AMQP differs from JMS.
+> In a nutshell, the main differences are the following:
+> - AMQP defines both an API and a wire-format, ensuring compatibility between implementations (JMS only defines an API),
+> - In JMS you publish directly to destinations (queues or topic) while in AMQP you publish to exchanges to which queues are bound (or not), which decouples the producer from the final destination of its messages.
+> - For some types of exchanges, the delivery to the final destination depends on a routing key, a simple string that provides the necessary meta-information for successfully routing the message (unlike in JMS where the *name* of the destination is all it's needed).  
+
+Core Transport Principles
+-------------------------
+
+*TBD*
+
+
 Configuration Reference
 -----------------------
 
