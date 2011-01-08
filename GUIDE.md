@@ -380,5 +380,112 @@ The following demonstrates a connector that fetches messages one by one and a fl
       -->
       <amqp:acknowledge-message />
     </flow>
- 
- 
+
+### Publish messages to a redeclared exchange
+
+This is a typical AMQP pattern where producers redeclare the exchanges they intend to publish to.
+
+    <amqp:connector name="amqpLocalhostConnector"
+                    virtualHost="my-vhost"
+                    username="my-user"
+                    password="my-pwd"
+                    activeDeclarationsOnly="true" />
+
+    <amqp:outbound-endpoint routingKey="my-key"
+                            exchangeName="my-exchange"
+                            exchangeType="fanout"
+                            exchangeAutoDelete="false"
+                            exchangeDurable="false"
+                            connector-ref="amqpLocalhostConnector" />
+
+### Publish messages to a pre-existing exchange
+
+It is also possible to publish to a pre-existing exchange:
+
+    <amqp:outbound-endpoint exchangeName="my-exchange"
+                            connector-ref="amqpLocalhostConnector" />
+
+It can be desirable to strictly enforce the existence of this exchange before publishing to it.
+
+This is done by configuring the connector to perform passive declarations:
+
+    <amqp:connector name="amqpStrictLocalhostConnector"
+                    virtualHost="my-vhost"
+                    username="my-user"
+                    password="my-pwd"
+                    activeDeclarationsOnly="false" />
+                    
+    <amqp:outbound-endpoint routingKey="my-key"
+                            exchangeName="my-exchange"
+                            connector-ref="amqpStrictLocalhostConnector" />
+
+### Message level override of exchange and routing key
+
+It is possible to override some outbound endpoint attributes with **outbound-scoped** message properties:
+
+- *routing-key* overrides the routingKey attribute,
+- *exchange* overrides the exchangeName attribute.
+
+### Mandatory and immediate deliveries and returned message handling
+
+The connector supports the mandatory and immediate publication flags, as show hereafter:
+
+  <amqp:connector name="mandatoryAmqpConnector"
+                  virtualHost="mule-test"
+                  username="mule"
+                  password="elum"
+                  mandatory="true"
+                  immediate="true" />
+
+If a message sent with this connector can't be delivered, the AMQP broker will return it asynchronously.
+
+The AMQP transport offers the possibility to dispatch these returned messages to user defined endpoints for custom processing.
+
+You can define the endpoint in charge of handling returned messages at connector level. Here is an example that targets a VM endpoint:
+
+  <vm:endpoint name="globalReturnedMessageChannel" path="global.returnedMessages" />
+
+  <amqp:connector name="mandatoryAmqpConnector"
+                  virtualHost="mule-test"
+                  username="mule"
+                  password="elum"
+                  mandatory="true"
+                  default-return-endpoint-ref="globalReturnedMessageChannel" />
+
+It is also possible to define the returned message endpoint at flow level:
+
+    <vm:endpoint name="flowReturnedMessageChannel" path="flow.returnedMessages" />
+
+    <flow name="amqpMandatoryDeliveryFailureFlowHandler">
+      <!--
+      inbound endpoint, components, routers ...
+      -->
+
+      <amqp:return-handler>
+        <vm:outbound-endpoint ref="flowReturnedMessageChannel" />
+      </amqp:return-handler>
+
+      <amqp:outbound-endpoint routingKey="my-key"
+                              exchangeName="my-exchange"
+                              connector-ref="mandatoryAmqpConnector" />
+    </flow>
+
+If both are configured, the handler defined in the flow will supersede the one defined in the connector. 
+
+If none is configured, Mule will log a warning with the full details of the returned message.
+
+### Request-response publication
+
+It is possible to perform synchronous (request-response) outbound operations:
+
+    <amqp:outbound-endpoint routingKey="my-key"
+                            exchange-pattern="request-response"
+                            exchangeName="my-exchange"
+                            connector-ref="amqpLocalhostConnector" />
+
+In that case, Mule will:
+
+- create a temporary auto-delete private reply queue,
+- set-it as the reply-to property of the current message,
+- publish the message to the specified exchange,
+- wait for a response to be sent to the reply-queue (via the default exchange).
