@@ -87,7 +87,7 @@ public class ObjectToAmqpMessage extends AbstractAmqpMessageToObject
         final Map<String, Object> headers = new HashMap<String, Object>();
         for (final String propertyName : message.getPropertyNames(PropertyScope.OUTBOUND))
         {
-            if (!AmqpConstants.AMQP_PROPERTY_NAMES.contains(propertyName))
+            if (!AmqpConstants.AMQP_ALL_PROPERTY_NAMES.contains(propertyName))
             {
                 headers.put(propertyName, message.getProperty(propertyName, PropertyScope.OUTBOUND));
             }

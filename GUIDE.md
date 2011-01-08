@@ -27,16 +27,41 @@ The Mule AMQP Transport is an abstraction built on top of the previously introdu
 
 The transport hides the low level concepts, like dealing with channels, but gives a great deal of control on all the constructs it encapsulates allowing you to experience the richness of AMQP without the need to code to its API.
 
-Here is a review of the main configuration elements and concepts you'll deal with when using the transport:
+Here is a quick review of the main configuration elements you'll deal with when using the transport:
 
 - The *connector* element take care of establishing the connection to AMQP brokers, deals with channels and manages a set of common properties that will be shared by all consumers or publishers that will use this connector.
-TBD...
-- The *inbound endpoint* elements are in charge of defining...
-- The *outbound endpoint* elements are in charge of defining...
+- The *inbound endpoint* elements are in charge of consuming messages from AMQP queues and route them to your components, transformers, routers or other outbound endpoints as defined in your Mule configuration.
+- The *outbound endpoint* elements are in charge of publishing messages to AMQP exchanges from your Mule configuration. 
 
-TBD MuleMessage abstraction byte[]
+### Message payload and properties
 
+The AMQP transport works with another abstraction that is very important to understand: the *Mule Message*. A Mule Message is a transport agnostic abstraction that encapsulates a payload and meta-information named properties: this allows your different configuration element to deal with messages while being oblivious to the source or destination of such messages.
 
+An AMQP message also has the notion of a payload (in bytes) and message properties, which are composed of a set of pre-defined ones (know as basic properties) and any additional custom ones. Moreover, when a message is delivered, extra properties, known as envelope properties, are also available.
+
+The AMQPtransport will create Mule Messages with byte[] payloads for inbound messages and will rely on Mule's auto transformation infrastructure to extract byte[] payloads from Mule Messages for outbound messages. Should you need to use a particular payload representation (for example XML or JSON), it is up to you to add the necessary transformers to perform the desired serialization/deserialization steps.  
+
+The transport also takes care of making the properties of inbound messages available as standard Mule Message properties and, conversely, converting properties of Mule Messages into AMQP properties for outbound messages.
+
+Here is the list of properties supported by the transport:
+
+<!--
+    Generated with: org.mule.transport.amqp.AmqpConstants.main()
+-->
+#### Basic Properties
+
+<table>
+<tr><th>Property Name</th><tr><tr><td>content-type</td><tr><tr><td>expiration</td><tr><tr><td>message-id</td><tr><tr><td>content-encoding</td><tr><tr><td>type</td><tr><tr><td>timestamp</td><tr><tr><td>priority</td><tr><tr><td>user-id</td><tr><tr><td>reply-to</td><tr><tr><td>app-id</td><tr><tr><td>correlation-id</td><tr><tr><td>delivery_mode</td><tr></table>
+#### Envelope Properties
+
+<table>
+<tr><th>Property Name</th><tr><tr><td>redelivered</td><tr><tr><td>delivery-tag</td><tr><tr><td>routing-key</td><tr><tr><td>exchange</td><tr></table>
+#### Technical Properties
+
+<table>
+<tr><th>Property Name</th><tr><tr><td>amqp.return.listener</td><tr><tr><td>consumer-tag</td><tr><tr><td>amqp.channel</td><tr></table>
+
+On top of that all custom headers defined in the AMQP basic properties are added as standard Mule properties.  
 
 Configuration Reference
 -----------------------
@@ -54,7 +79,9 @@ The AMQP connector defines what broker to connect to, which credentials to use w
 It is possible to create several connectors connected to the same broker for the purpose of having different sets of common properties that the endpoints will use. 
 
 <table class="confluenceTable">
-  <th style="width:10%" class="confluenceTh">Name</th><th style="width:10%" class="confluenceTh">Type</th><th style="width:10%" class="confluenceTh">Required</th><th style="width:10%" class="confluenceTh">Default</th><th class="confluenceTh">Description</th>
+  <tr>
+    <th style="width:10%" class="confluenceTh">Name</th><th style="width:10%" class="confluenceTh">Type</th><th style="width:10%" class="confluenceTh">Required</th><th style="width:10%" class="confluenceTh">Default</th><th class="confluenceTh">Description</th>
+  </tr>
   <tr>
     <td rowspan="1" class="confluenceTd">host</td><td style="text-align: center" class="confluenceTd">string</td><td style="text-align: center" class="confluenceTd">no</td><td style="text-align: center" class="confluenceTd">localhost</td><td class="confluenceTd">
       <p>
@@ -217,7 +244,9 @@ Endpoint attributes are interpreted differently if they are used on inbound or o
 	Parameter     : elementName=endpoint
 -->
 <table class="confluenceTable">
-  <th style="width:10%" class="confluenceTh">Name</th><th style="width:10%" class="confluenceTh">Type</th><th style="width:10%" class="confluenceTh">Required</th><th style="width:10%" class="confluenceTh">Default</th><th class="confluenceTh">Description</th>
+  <tr>
+    <th style="width:10%" class="confluenceTh">Name</th><th style="width:10%" class="confluenceTh">Type</th><th style="width:10%" class="confluenceTh">Required</th><th style="width:10%" class="confluenceTh">Default</th><th class="confluenceTh">Description</th>
+  </tr>
   <tr>
     <td rowspan="1" class="confluenceTd">exchangeName</td><td style="text-align: center" class="confluenceTd">string</td><td style="text-align: center" class="confluenceTd">no</td><td style="text-align: center" class="confluenceTd"></td><td class="confluenceTd">
       <p>

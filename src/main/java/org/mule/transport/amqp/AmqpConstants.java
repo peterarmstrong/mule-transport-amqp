@@ -15,6 +15,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.mule.util.ArrayUtils;
+
 public abstract class AmqpConstants
 {
     public enum DeliveryMode
@@ -54,7 +56,6 @@ public abstract class AmqpConstants
     // message properties names are consistent with AMQP spec
     // (cluster-id is deprecated and not supported here)
     public static final String APP_ID = "app-id";
-    public static final String CONSUMER_TAG = "consumer-tag";
     public static final String CONTENT_ENCODING = "content-encoding";
     public static final String CONTENT_TYPE = "content-type";
     public static final String CORRELATION_ID = "correlation-id";
@@ -71,12 +72,57 @@ public abstract class AmqpConstants
     public static final String TYPE = "type";
     public static final String USER_ID = "user-id";
 
-    public static final Set<String> AMQP_PROPERTY_NAMES = Collections.unmodifiableSet(new HashSet<String>(
-        Arrays.asList(new String[]{APP_ID, CONSUMER_TAG, CONTENT_ENCODING, CONTENT_TYPE, CORRELATION_ID,
-            DELIVERY_MODE, DELIVERY_TAG, EXCHANGE, EXPIRATION, MESSAGE_ID, PRIORITY, REPLY_TO, REDELIVER,
-            ROUTING_KEY, TIMESTAMP, TYPE, USER_ID})));
+    private static final String[] AMQP_ENVELOPE_PROPERTY_NAMES_ARRAY = new String[]{DELIVERY_TAG, EXCHANGE,
+        REDELIVER, ROUTING_KEY};
+
+    private static final String[] AMQP_BASIC_PROPERTY_NAMES_ARRAY = new String[]{APP_ID, CONTENT_ENCODING,
+        CONTENT_TYPE, CORRELATION_ID, DELIVERY_MODE, EXPIRATION, MESSAGE_ID, PRIORITY, REPLY_TO, TIMESTAMP,
+        TYPE, USER_ID};
+
+    public static final Set<String> AMQP_ENVELOPE_PROPERTY_NAMES = Collections.unmodifiableSet(new HashSet<String>(
+        Arrays.asList(AMQP_ENVELOPE_PROPERTY_NAMES_ARRAY)));
+
+    public static final Set<String> AMQP_BASIC_PROPERTY_NAMES = Collections.unmodifiableSet(new HashSet<String>(
+        Arrays.asList(AMQP_BASIC_PROPERTY_NAMES_ARRAY)));
 
     // technical properties not intended to be messed with directly
     public static final String CHANNEL = AmqpConnector.AMQP + ".channel";
-    public static final String RETURN_LISTENER = AmqpConnector.AMQP + ".return.message.processors";
+    public static final String CONSUMER_TAG = "consumer-tag";
+    public static final String RETURN_LISTENER = AmqpConnector.AMQP + ".return.listener";
+
+    private static final String[] AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES_ARRAY = new String[]{CHANNEL,
+        CONSUMER_TAG, RETURN_LISTENER};
+
+    public static final Set<String> AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES = Collections.unmodifiableSet(new HashSet<String>(
+        Arrays.asList(AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES_ARRAY)));
+
+    public static final Set<String> AMQP_ALL_PROPERTY_NAMES = Collections.unmodifiableSet(new HashSet<String>(
+        Arrays.asList((String[]) ArrayUtils.addAll(
+            ArrayUtils.addAll(AMQP_ENVELOPE_PROPERTY_NAMES_ARRAY, AMQP_BASIC_PROPERTY_NAMES_ARRAY),
+            AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES_ARRAY))));
+
+    public static void main(final String[] args)
+    {
+        // generates the properties HTML tables used in the documentation
+        final StringBuilder sb = new StringBuilder();
+        appendPropertiesTable("#### Basic Properties", AMQP_BASIC_PROPERTY_NAMES, sb);
+        appendPropertiesTable("#### Envelope Properties", AMQP_ENVELOPE_PROPERTY_NAMES, sb);
+        appendPropertiesTable("#### Technical Properties", AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES, sb);
+        System.out.println(sb.toString());
+    }
+
+    private static void appendPropertiesTable(final String label,
+                                              final Set<String> propertyNames,
+                                              final StringBuilder sb)
+    {
+        sb.append(label).append("\n\n");
+        sb.append("<table>\n");
+        sb.append("<tr><th>Property Name</th><tr>");
+        for (final String propertyName : propertyNames)
+        {
+            sb.append("<tr><td>").append(propertyName).append("</td><tr>");
+        }
+        sb.append("</table>\n");
+
+    }
 }
