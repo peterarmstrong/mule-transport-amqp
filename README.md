@@ -1,6 +1,8 @@
 Mule AMQP Transport
 ===================
 
+Read the [complete user guide](./GUIDE.md).
+
 Supported AMQP Versions
 -----------------------
 
