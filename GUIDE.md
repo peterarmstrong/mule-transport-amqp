@@ -4,10 +4,20 @@ Mule AMQP Transport - User Guide
 Welcome to AMQP
 ---------------
 
-*TBD* Introduce: connection, channel, exchanges, queues and messages
+The Advanced Message Queuing Protocol (AMQP) is an open standard application layer protocol for message-oriented middleware. The defining features of AMQP are message orientation, queuing, routing (including point-to-point and publish-and-subscribe), reliability and security ([Wikipedia](http://en.wikipedia.org/wiki/AMQP)).
+The specifications are available [on-line](http://amqp.org) and several broker implementations exist, like the very popular [VMware RabbitMQ](http://www.rabbitmq.com) and [Apache Qpid](http://qpid.apache.org/).   
 
+AMQP is built around a few easy to grasp concepts:
 
-
+- Clients connect via channels to AMQP brokers in order to send or receive [messages](http://en.wikipedia.org/wiki/AMQP#Messages),
+- They can publish messages to [exchanges](http://en.wikipedia.org/wiki/AMQP#Exchanges),
+- Messages published to exchanges a routed to [queues](http://en.wikipedia.org/wiki/AMQP#Queues) where they get accumulated for later consuming.
+- The queue that will constitute the final destination of a message is not known by the message publisher: it is determined by the type of the exchange and a piece of meta information known as the "routing key".
+- It is possible for a message to end-up nowhere if no queue has been bound to the targeted exchange or if no routing rules haven't matched any existing queue.
+- There are four main types of exchanges: [direct, fanout, topic and headers](http://en.wikipedia.org/wiki/AMQP#Exchange_types_and_the_effect_of_bindings). 
+- Clients interested in consuming messages must create queues and [bind](http://en.wikipedia.org/wiki/AMQP#Bindings) these queues to exchanges.
+- Queue and exchange declaration is an idempotent operation hence it is common practice to declare them on each client startup. 
+	
 > ** AMQP for the JMS savvy **
 >
 > If you're a Java developer, chances are you have been exposed to JMS and are wondering how AMQP differs from JMS.
