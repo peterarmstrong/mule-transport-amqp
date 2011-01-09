@@ -1,7 +1,7 @@
 Mule AMQP Transport
 ===================
 
-Read the [complete user guide](./GUIDE.md).
+Read the [complete user guide](http://github.com/mulesoft/mule-transport-amqp/blob/master/GUIDE.md).
 
 Supported AMQP Versions
 -----------------------
