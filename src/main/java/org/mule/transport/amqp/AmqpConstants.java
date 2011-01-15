@@ -90,8 +90,14 @@ public abstract class AmqpConstants
     public static final String CHANNEL = AmqpConnector.AMQP + ".channel";
     public static final String RETURN_LISTENER = AmqpConnector.AMQP + ".return.listener";
 
+    public static final String RETURN_CONTEXT_PREFIX = "return.";
+    public static final String RETURN_REPLY_CODE = RETURN_CONTEXT_PREFIX + "reply-code";
+    public static final String RETURN_REPLY_TEXT = RETURN_CONTEXT_PREFIX + "reply-text";
+    public static final String RETURN_EXCHANGE = RETURN_CONTEXT_PREFIX + EXCHANGE;
+    public static final String RETURN_ROUTING_KEY = RETURN_CONTEXT_PREFIX + ROUTING_KEY;
+
     private static final String[] AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES_ARRAY = new String[]{CONSUMER_TAG,
-        CHANNEL, RETURN_LISTENER};
+        CHANNEL, RETURN_LISTENER, RETURN_REPLY_CODE, RETURN_REPLY_TEXT, RETURN_EXCHANGE, RETURN_ROUTING_KEY};
 
     public static final Set<String> AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES = Collections.unmodifiableSet(new HashSet<String>(
         Arrays.asList(AMQP_TRANSPORT_TECHNICAL_PROPERTY_NAMES_ARRAY)));

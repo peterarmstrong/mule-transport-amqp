@@ -63,10 +63,10 @@ Here is the list of properties supported by the transport:
 <tr><td>app-id</td><td>delivery-tag</td><td>consumer-tag</td></tr>
 <tr><td>content-encoding</td><td>exchange</td><td>amqp.channel</td></tr>
 <tr><td>content-type</td><td>redelivered</td><td>amqp.return.listener</td></tr>
-<tr><td>correlation-id</td><td>routing-key</td><td></td></tr>
-<tr><td>delivery_mode</td><td></td><td></td></tr>
-<tr><td>expiration</td><td></td><td></td></tr>
-<tr><td>message-id</td><td></td><td></td></tr>
+<tr><td>correlation-id</td><td>routing-key</td><td>return.reply-code</td></tr>
+<tr><td>delivery_mode</td><td></td><td>return.reply-text</td></tr>
+<tr><td>expiration</td><td></td><td>return.exchange</td></tr>
+<tr><td>message-id</td><td></td><td>return.routing-key</td></tr>
 <tr><td>priority</td><td></td><td></td></tr>
 <tr><td>reply-to</td><td></td><td></td></tr>
 <tr><td>timestamp</td><td></td><td></td></tr>

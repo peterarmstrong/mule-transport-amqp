@@ -11,7 +11,9 @@
 package org.mule.transport.amqp;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
@@ -24,6 +26,7 @@ import org.mule.api.MuleMessage;
 import org.mule.api.construct.FlowConstruct;
 import org.mule.api.endpoint.ImmutableEndpoint;
 import org.mule.api.processor.MessageProcessor;
+import org.mule.api.transport.PropertyScope;
 import org.mule.processor.AbstractInterceptingMessageProcessor;
 import org.mule.session.DefaultMuleSession;
 
@@ -52,12 +55,20 @@ public class AmqpReturnHandler extends AbstractInterceptingMessageProcessor
                 "AMQP returned message with code: %d, reason: %s, exchange: %s, routing key: %s", replyCode,
                 replyText, exchange, routingKey);
 
+            final Map<String, Object> returnContext = new HashMap<String, Object>(4);
+            returnContext.put(AmqpConstants.RETURN_REPLY_CODE, replyCode);
+            returnContext.put(AmqpConstants.RETURN_REPLY_TEXT, replyText);
+            returnContext.put(AmqpConstants.RETURN_EXCHANGE, exchange);
+            returnContext.put(AmqpConstants.RETURN_ROUTING_KEY, routingKey);
+
             final AmqpMessage returnedAmqpMessage = new AmqpMessage(null, null, properties, body);
 
-            doHandleBasicReturn(errorMessage, returnedAmqpMessage);
+            doHandleBasicReturn(errorMessage, returnContext, returnedAmqpMessage);
         }
 
-        protected abstract void doHandleBasicReturn(String errorMessage, AmqpMessage returnedAmqpMessage);
+        protected abstract void doHandleBasicReturn(String errorMessage,
+                                                    Map<String, Object> returnContext,
+                                                    AmqpMessage returnedAmqpMessage);
 
         @Override
         public String toString()
@@ -71,7 +82,9 @@ public class AmqpReturnHandler extends AbstractInterceptingMessageProcessor
         protected final AtomicInteger hitCount = new AtomicInteger(0);
 
         @Override
-        protected void doHandleBasicReturn(final String errorMessage, final AmqpMessage returnedAmqpMessage)
+        protected void doHandleBasicReturn(final String errorMessage,
+                                           final Map<String, Object> ignored,
+                                           final AmqpMessage returnedAmqpMessage)
         {
             hitCount.incrementAndGet();
             LOGGER.warn(String.format("%s: %s", errorMessage, returnedAmqpMessage));
@@ -119,7 +132,9 @@ public class AmqpReturnHandler extends AbstractInterceptingMessageProcessor
         }
 
         @Override
-        protected void doHandleBasicReturn(final String errorMessage, final AmqpMessage returnedAmqpMessage)
+        protected void doHandleBasicReturn(final String errorMessage,
+                                           final Map<String, Object> returnContext,
+                                           final AmqpMessage returnedAmqpMessage)
         {
             try
             {
@@ -127,6 +142,8 @@ public class AmqpReturnHandler extends AbstractInterceptingMessageProcessor
                 final MuleMessage returnedMuleMessage = amqpConnector.getMuleMessageFactory().create(
                     returnedAmqpMessage,
                     amqpConnector.getMuleContext().getConfiguration().getDefaultEncoding());
+
+                returnedMuleMessage.addProperties(returnContext, PropertyScope.INBOUND);
 
                 for (final MessageProcessor returnMessageProcessor : returnMessageProcessors)
                 {
