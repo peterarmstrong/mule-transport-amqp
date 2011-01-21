@@ -43,6 +43,7 @@ public abstract class AmqpEndpointUtil
     public static final String QUEUE_PREFIX = "amqp-queue.";
     public static final String EXCHANGE_TYPE = "exchangeType";
     public static final String ROUTING_KEY = "routingKey";
+    public static final String CONSUMER_TAG = "consumerTag";
 
     public static String getOrCreateQueue(final Channel channel,
                                           final InboundEndpoint inboundEndpoint,
@@ -166,6 +167,11 @@ public abstract class AmqpEndpointUtil
     public static String getRoutingKey(final ImmutableEndpoint endpoint)
     {
         return StringUtils.defaultString((String) endpoint.getProperty(ROUTING_KEY));
+    }
+
+    public static String getConsumerTag(final ImmutableEndpoint endpoint)
+    {
+        return StringUtils.defaultString((String) endpoint.getProperty(CONSUMER_TAG));
     }
 
     public static String getQueueName(final String endpointAddress)

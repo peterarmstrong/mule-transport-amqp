@@ -82,6 +82,14 @@
                            connector-ref="amqpAutoAckLocalhostConnector" />
     <test:component />
   </flow>
+  
+  <flow name="amqpClientConsumerTagService">
+    <!-- Set a custom consumer tag -->
+    <amqp:inbound-endpoint queueName="amqpClientConsumerTagService-queue"
+                           consumerTag="test-consumer-tag"
+                           connector-ref="amqpAutoAckLocalhostConnector" />
+    <test:component />
+  </flow>
 
   <flow name="amqpMuleAckService">
     <!-- Test the Mule-driven acknowledgment of messages -->

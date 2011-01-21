@@ -309,6 +309,13 @@
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
+    <xsd:attribute name="consumerTag" type="xsd:string">
+      <xsd:annotation>
+        <xsd:documentation>
+          A client-generated consumer tag to establish context.
+        </xsd:documentation>
+      </xsd:annotation>
+    </xsd:attribute>
     <xsd:attribute name="exchangeType">
       <xsd:annotation>
         <xsd:documentation>

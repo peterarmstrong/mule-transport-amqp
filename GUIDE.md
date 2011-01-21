@@ -284,6 +284,13 @@ Endpoint attributes are interpreted differently if they are used on inbound or o
     </td>
   </tr>
   <tr>
+    <td rowspan="1" class="confluenceTd">consumerTag</td><td style="text-align: center" class="confluenceTd">string</td><td style="text-align: center" class="confluenceTd">no</td><td style="text-align: center" class="confluenceTd"></td><td class="confluenceTd">
+      <p>
+      A client-generated consumer tag to establish context.
+    </p>
+    </td>
+  </tr>
+  <tr>
     <td rowspan="1" class="confluenceTd">exchangeType</td><td style="text-align: center" class="confluenceTd"><b>fanout</b> / <b>direct</b> / <b>topic</b> / <b>headers</b></td><td style="text-align: center" class="confluenceTd">no</td><td style="text-align: center" class="confluenceTd"></td><td class="confluenceTd">
       <p>
       The type of exchange to be declared.

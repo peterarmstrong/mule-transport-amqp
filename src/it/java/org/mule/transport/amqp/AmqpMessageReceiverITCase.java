@@ -29,6 +29,7 @@ public class AmqpMessageReceiverITCase extends AbstractAmqpITCase
         setupExchange("amqpServerNamedQueueExistingExchangeService");
         setupExchange("amqpNewQueueExistingExchangeService");
         setupExchange("amqpNewQueueRedeclaredExistingExchangeService");
+        setupExchangeAndQueue("amqpClientConsumerTagService");
         setupExchangeAndQueue("amqpMuleAckService");
         setupExchangeAndQueue("amqpManualAckService");
         setupExchangeAndQueue("amqpManualRejectService");
@@ -59,6 +60,11 @@ public class AmqpMessageReceiverITCase extends AbstractAmqpITCase
     public void testNewQueueRedeclaredExistingExchange() throws Exception
     {
         dispatchTestMessageAndAssertValidReceivedMessage("amqpNewQueueRedeclaredExistingExchangeService");
+    }
+
+    public void testClientConsumerTag() throws Exception
+    {
+        dispatchTestMessageAndAssertValidReceivedMessage("amqpClientConsumerTagService");
     }
 
     public void testNewQueueNewExchange() throws Exception

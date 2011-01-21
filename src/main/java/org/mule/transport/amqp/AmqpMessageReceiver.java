@@ -92,8 +92,8 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
         try
         {
             consumerTag = getChannel().basicConsume(getQueueName(), amqpConnector.getAckMode().isAutoAck(),
-                StringUtils.EMPTY, amqpConnector.isNoLocal(), amqpConnector.isExclusiveConsumers(), null,
-                new DefaultConsumer(getChannel())
+                getClientConsumerTag(), amqpConnector.isNoLocal(), amqpConnector.isExclusiveConsumers(),
+                null, new DefaultConsumer(getChannel())
                 {
                     @Override
                     public void handleDelivery(final String consumerTag,
@@ -118,7 +118,8 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
                     {
                         if (!sse.isInitiatedByApplication())
                         {
-                            // inform the connector the subscription is dead so it will reconnect the receiver
+                            // inform the connector the subscription is dead
+                            // so it will reconnect the receiver
                             amqpConnector.handleException(new ConnectException(
                                 MessageFactory.createStaticMessage("Unexpected susbscription shutdown for: "
                                                                    + consumerTag), sse,
@@ -140,7 +141,8 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
     @Override
     public void doStop()
     {
-        // FIXME remove when http://www.mulesoft.org/jira/browse/MULE-5290 is fixed
+        // FIXME remove when http://www.mulesoft.org/jira/browse/MULE-5290 is
+        // fixed
         if (!getChannel().isOpen())
         {
             logger.warn("Attempting to stop a subscription on a closed channel (probably due to http://www.mulesoft.org/jira/browse/MULE-5290)");
@@ -175,9 +177,15 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
         return inboundConnection == null ? null : inboundConnection.getQueue();
     }
 
+    protected String getClientConsumerTag()
+    {
+        return AmqpEndpointUtil.getConsumerTag(getEndpoint());
+    }
+
     private void deliverAmqpMessage(final AmqpMessage amqpMessage)
     {
-        // deliver message in a different thread to free the Amqp Connector's thread
+        // deliver message in a different thread to free the Amqp Connector's
+        // thread
         try
         {
             getWorkManager().scheduleWork(new AmqpMessageRouterWork(getChannel(), amqpMessage));
@@ -217,7 +225,8 @@ public class AmqpMessageReceiver extends AbstractMessageReceiver
 
                 if (amqpConnector.getAckMode() == AckMode.MANUAL)
                 {
-                    // in manual AckMode, the channel will be needed to ack the message
+                    // in manual AckMode, the channel will be needed to ack the
+                    // message
                     muleMessage.setProperty(AmqpConstants.CHANNEL, channel, PropertyScope.INVOCATION);
                 }
 
