@@ -277,6 +277,8 @@ public class AmqpConnector extends AbstractConnector
         connection = connectionFactory.newConnection(brokerAddresses.toArray(new Address[0]));
 
         configureDefaultReturnListener();
+        // clear any connector connections that could have been created in a previous connect() operation
+        connectorConnectionPool.clear();
     }
 
     private void addFallbackAddresses(final List<Address> brokerAddresses)
