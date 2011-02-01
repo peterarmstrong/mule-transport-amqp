@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.mule.transports</groupId>
@@ -20,7 +19,14 @@
     <vmtype>org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType</vmtype>
     <jdk5Name>J2SE-1.5</jdk5Name>
     <jdk.version>1.5</jdk.version>
+    <domainName>amqp</domainName>
   </properties>
+
+  <scm>
+    <connection>scm:git:git@github.com:mulesoft/mule-transport-amqp.git</connection>
+    <developerConnection>scm:git:git@github.com:mulesoft/mule-transport-amqp.git</developerConnection>
+    <url>https://github.com/mulesoft/mule-transport-amqp</url>
+  </scm>
 
   <build>
     <extensions>
@@ -67,18 +73,28 @@
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
-          <finalName>mule-transport-amqp-1.0-SNAPSHOT</finalName>
+          <finalName>${artifactId}-${version}</finalName>
           <descriptors>
             <descriptor>assembly.xml</descriptor>
           </descriptors>
           <appendAssemblyId>false</appendAssemblyId>
         </configuration>
+        <executions>
+          <execution>
+            <id>upload-muleforge-artifacts</id>
+            <phase>deploy</phase>
+            <goals>
+              <goal>assembly</goal>
+            </goals>
+          </execution>
+        </executions>
+
       </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <version>2.0-beta-7</version>
+        <version>2.1</version>
         <configuration>
           <!-- We only do this at release time. However, before doing a release 
             of your project and deploying it you nedd to run 'mvn assembly:assembly' 
@@ -260,31 +276,19 @@
     <url>http://www.mulesoft.org/jira/browse/AMQP</url>
   </issueManagement>
 
-  <scm>
-    <connection>scm:svn:http://svn.muleforge.org/amqp/</connection>
-    <developerConnection>scm:svn:https://svn.muleforge.org/amqp/</developerConnection>
-    <tag>HEAD</tag>
-    <url>http://svn.amqp.muleforge.org/</url>
-  </scm>
-
-  <ciManagement>
-    <system>Bamboo</system>
-    <url>http://bamboo.muleforge.org/browse/AMQP-FORGE</url>
-    <notifiers />
-  </ciManagement>
 
   <distributionManagement>
     <repository>
       <id>muleforge.webdav.releases</id>
-      <url>dav:https://dav.muleforge.org/repository/amqp/</url>
+      <url>dav:https://dav.muleforge.org/repository/maven2</url>
     </repository>
     <snapshotRepository>
       <id>muleforge.webdav.snapshots</id>
-      <url>dav:https://dav.muleforge.org/snapshots.repository/amqp/</url>
+      <url>dav:https://dav.muleforge.org/snapshots.repository/maven2</url>
     </snapshotRepository>
     <site>
       <id>muleforge.webdav.sites</id>
-      <url>dav:https://dav.muleforge.org/amqp</url>
+      <url>dav:https://dav.muleforge.org/maven2</url>
     </site>
   </distributionManagement>
 
