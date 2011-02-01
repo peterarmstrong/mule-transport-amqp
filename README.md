@@ -42,20 +42,20 @@ Maven Support
 
 Add the following repository:
 
-    `<repository>
+    <repository>
       <id>muleforge-repo</id>
       <name>MuleForge Repository</name>
       <url>http://repository.muleforge.org</url>
       <layout>default</layout>
-    </repository>`
+    </repository>
 
 To add the Mule AMQP transport to a Maven project add the following dependency:
 
-    `<dependency>
+    <dependency>
       <groupId>org.mule.transports</groupId>
       <artifactId>mule-transport-amqp</artifactId>
       <version>3.1.0</version>
-    </dependency>`
+    </dependency>
 
 
 Not (Yet) Supported
