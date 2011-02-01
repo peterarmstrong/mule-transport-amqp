@@ -19,7 +19,7 @@
     <vmtype>org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType</vmtype>
     <jdk5Name>J2SE-1.5</jdk5Name>
     <jdk.version>1.5</jdk.version>
-    <domainName>amqp</domainName>
+    <domainName>maven2</domainName>
   </properties>
 
   <scm>
