@@ -40,7 +40,7 @@ public class AmqpMessage
 
     public String getConsumerTag()
     {
-        return consumerTag;
+            return consumerTag;
     }
 
     public Envelope getEnvelope()

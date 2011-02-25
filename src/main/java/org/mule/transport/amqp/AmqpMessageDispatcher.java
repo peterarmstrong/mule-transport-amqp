@@ -14,7 +14,11 @@ import java.io.IOException;
 
 import org.mule.api.MuleEvent;
 import org.mule.api.MuleMessage;
+import org.mule.api.construct.FlowConstruct;
+import org.mule.api.endpoint.InboundEndpoint;
 import org.mule.api.endpoint.OutboundEndpoint;
+import org.mule.api.lifecycle.CreateException;
+import org.mule.api.transport.Connector;
 import org.mule.api.transport.DispatchException;
 import org.mule.config.i18n.MessageFactory;
 import org.mule.transport.AbstractMessageDispatcher;
@@ -82,12 +86,18 @@ public class AmqpMessageDispatcher extends AbstractMessageDispatcher
     {
         super(endpoint);
         amqpConnector = (AmqpConnector) endpoint.getConnector();
+        if (logger.isDebugEnabled())
+        {
+             logger.debug("[Instantiate Dispatcher]");
+        }
+
     }
 
     @Override
     public void doConnect() throws Exception
     {
         outboundConnection = amqpConnector.connect(this);
+
     }
 
     @Override

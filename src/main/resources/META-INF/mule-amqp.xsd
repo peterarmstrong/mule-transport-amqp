@@ -47,6 +47,14 @@
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
+        <xsd:attribute name="connectionFactory-ref" type="xsd:string"
+          use="optional">
+          <xsd:annotation>
+            <xsd:documentation>
+             Reference to the connection factory, this is optional
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
         <xsd:attribute name="port" type="mule:substitutablePortNumber"
           default="5672">
           <xsd:annotation>

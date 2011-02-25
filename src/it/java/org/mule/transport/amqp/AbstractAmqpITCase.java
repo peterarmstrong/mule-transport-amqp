@@ -184,6 +184,20 @@ public abstract class AbstractAmqpITCase extends FunctionalTestCase
         }
     }
 
+    protected void deleteQueue(final String flowName) throws InterruptedException
+    {
+        final String queue = getQueueName(flowName);
+        try
+        {
+            getChannel().queueDelete(queue);
+        }
+        catch (final IOException ioe)
+        {
+            //ignored
+            Thread.sleep(1000L);
+        }
+    }
+
     protected String getQueueName(final String flowName)
     {
         return flowName + "-queue";

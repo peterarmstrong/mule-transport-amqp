@@ -1,178 +1,224 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp"
-  xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
-  xmlns:test="http://www.mulesoft.org/schema/mule/test"
-  xsi:schemaLocation="
+      xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp"
+      xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+      xmlns:test="http://www.mulesoft.org/schema/mule/test"
+      xmlns:spring="http://www.springframework.org/schema/beans"
+      xsi:schemaLocation="
        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/3.1/mule.xsd
        http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/3.1/mule-amqp.xsd
        http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/3.1/mule-vm.xsd
-       http://www.mulesoft.org/schema/mule/test http://www.mulesoft.org/schema/mule/test/3.1/mule-test.xsd">
+       http://www.mulesoft.org/schema/mule/test http://www.mulesoft.org/schema/mule/test/3.1/mule-test.xsd
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
 
-  <amqp:connector name="amqpConnector"
-                  virtualHost="mule-test"
-                  username="mule"
-                  password="elum" />
-                  
-  <amqp:connector name="activeOnlyAmqpConnector"
-                  virtualHost="mule-test"
-                  username="mule"
-                  password="elum"
-                  activeDeclarationsOnly="true" />
-                  
-  <amqp:connector name="mandatoryAmqpConnector"
-                  virtualHost="mule-test"
-                  username="mule"
-                  password="elum"
-                  mandatory="true" />
-                  
-  <bridge name="amqpExistingExchangeService" exchange-pattern="one-way">
-    <vm:inbound-endpoint path="amqpExistingExchangeService.in">
-      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
-      <message-properties-transformer scope="outbound">
-        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
-      </message-properties-transformer>
-    </vm:inbound-endpoint>
-    <!-- Dispatch to an existing exchange --> 
-    <amqp:outbound-endpoint exchangeName="amqpExistingExchangeService-exchange"
-                            connector-ref="amqpConnector" />
-  </bridge>
-  
-  <bridge name="amqpRedeclaredExistingExchangeService" exchange-pattern="one-way">
-    <vm:inbound-endpoint path="amqpRedeclaredExistingExchangeService.in">
-      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
-      <message-properties-transformer scope="outbound">
-        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
-      </message-properties-transformer>
-    </vm:inbound-endpoint>
-    <!-- Dispatch to an existing exchange re-declared in Mule to ensure presence --> 
-    <amqp:outbound-endpoint exchangeName="amqpRedeclaredExistingExchangeService-exchange"
-                            exchangeType="fanout"
-                            exchangeAutoDelete="false"
-                            exchangeDurable="false"
-                            connector-ref="amqpConnector" />
-  </bridge>
-  
-  <bridge name="amqpNewExchangeService" exchange-pattern="one-way">
-    <vm:inbound-endpoint path="amqpNewExchangeService.in" />
-    <!-- Dispatch to a new exchange  --> 
-    <amqp:outbound-endpoint exchangeName="amqpNewExchangeService-exchange"
-                            exchangeType="fanout"
-                            exchangeAutoDelete="true"
-                            exchangeDurable="false"
-                            connector-ref="amqpConnector" />
-  </bridge>
-  
-  <bridge name="amqpDefaultExchangeService" exchange-pattern="one-way">
-    <vm:inbound-endpoint path="amqpDefaultExchangeService.in">
-      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
-      <message-properties-transformer scope="outbound">
-        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
-      </message-properties-transformer>
-    </vm:inbound-endpoint>
-    <!-- Dispatch to the default exchange  --> 
-    <amqp:outbound-endpoint exchangeName=""
-                            queueName="amqpDefaultExchangeService-queue"
-                            connector-ref="amqpConnector" />
-  </bridge>
-  
-  <bridge name="amqpMessageLevelOverrideService" exchange-pattern="one-way">
-    <vm:inbound-endpoint path="amqpMessageLevelOverrideService.in">
-      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
-      <message-properties-transformer scope="outbound">
-        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
-      </message-properties-transformer>
-      <!-- Define message level overrides for exchange and routing key -->
-      <message-properties-transformer scope="outbound">
-        <add-message-property key="exchange" value="amqpMessageLevelOverrideService-exchange"/>
-        <add-message-property key="routing-key" value="amqpMessageLevelOverrideService-queue"/>
-      </message-properties-transformer>
-    </vm:inbound-endpoint>
-    <amqp:outbound-endpoint exchangeName="thisExchangeWillBeOverriden"
-                            connector-ref="activeOnlyAmqpConnector" />
-  </bridge>
+    <amqp:connector name="amqpConnector"
+                    virtualHost="mule-test"
+                    username="mule"
+                    password="elum"/>
 
-  <flow name="amqpMandatoryDeliveryFailureNoHandler">
-    <vm:inbound-endpoint path="amqpMandatoryDeliveryFailureNoHandler.in" />
-    
-    <!-- No queue is bound to this exchange so this should fail -->
-    <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliveryFailureNoHandler-exchange"
-                            connector-ref="mandatoryAmqpConnector" />
-  </flow>
+    <amqp:connector name="activeOnlyAmqpConnector"
+                    virtualHost="mule-test"
+                    username="mule"
+                    password="elum"
+                    activeDeclarationsOnly="true"/>
 
-  <vm:endpoint name="returnedMessageChannel" path="amqpMandatoryDeliveryFailure.returnedMessages" />
+    <amqp:connector name="mandatoryAmqpConnector"
+                    virtualHost="mule-test"
+                    username="mule"
+                    password="elum"
+                    mandatory="true"/>
 
-  <flow name="amqpMandatoryDeliveryFailureWithHandler">
-    <vm:inbound-endpoint path="amqpMandatoryDeliveryFailureWithHandler.in" />
-    
-    <amqp:return-handler>
-      <vm:outbound-endpoint ref="returnedMessageChannel" />
-    </amqp:return-handler>
-    
-    <!-- No queue is bound to this exchange so this should fail -->
-    <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliveryFailureWithHandler-exchange"
-                            connector-ref="mandatoryAmqpConnector" />
-  </flow>
-  
-  <flow name="returnedMessageProcessor">
-    <inbound-endpoint ref="returnedMessageChannel" />
-    <test:component />
-  </flow>
-  
-  <bridge name="amqpMandatoryDeliverySuccess" exchange-pattern="one-way">
-    <vm:inbound-endpoint path="amqpMandatoryDeliverySuccess.in">
-      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
-      <message-properties-transformer scope="outbound">
-        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
-      </message-properties-transformer>
-    </vm:inbound-endpoint>
-    <!-- A queue is bound to this exchange so this should succeed -->
-    <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliverySuccess-exchange"
-                            connector-ref="mandatoryAmqpConnector" />
-  </bridge>
-  
-    
-  <bridge name="amqpRequestResponseService" exchange-pattern="request-response">
-    <vm:inbound-endpoint path="amqpRequestResponseService.in"
-                         exchange-pattern="request-response">
-      <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
-      <message-properties-transformer scope="outbound">
-        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
-      </message-properties-transformer>
-      <response>
-        <message-properties-transformer scope="outbound">
-          <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
-        </message-properties-transformer>
-      </response>
-    </vm:inbound-endpoint>
-    <!-- Send --> 
-    <amqp:outbound-endpoint exchange-pattern="request-response"
-                            exchangeName="amqpSendTargetService-exchange"
-                            exchangeType="fanout"
-                            exchangeAutoDelete="false"
-                            exchangeDurable="false"
-                            connector-ref="amqpConnector" />
-  </bridge>
+    <amqp:connector name="externalFactoryAmqpConnector"
+                    connectionFactory-ref="rabbitMQConnectionFactory"/>
 
-  <model>
-    <service name="amqpSendTargetService">
-      <inbound>
-        <amqp:inbound-endpoint exchangeName="amqpSendTargetService-exchange"
-                               exchangeType="fanout"
-                               exchangeAutoDelete="false"
-                               exchangeDurable="false"
-                               queueName="amqpSendTargetService-queue"
-                               queueDurable="false"
-                               queueExclusive="false"
-                               queueAutoDelete="true"
-                               connector-ref="amqpConnector">
-          <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
-          <message-properties-transformer scope="outbound">
-            <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
-          </message-properties-transformer>
-        </amqp:inbound-endpoint>
-      </inbound>
-      <test:component appendString="-response" />
-    </service>
-  </model>
+    <spring:bean name="rabbitMQConnectionFactory" class="com.rabbitmq.client.ConnectionFactory">
+        <spring:property name="username" value="mule"/>
+        <spring:property name="password" value="elum"/>
+        <spring:property name="virtualHost" value="mule-test"/>
+        <spring:property name="host" value="localhost"/>
+        <spring:property name="port" value="5672"/>
+    </spring:bean>
+
+
+    <bridge name="amqpExistingExchangeService" exchange-pattern="one-way">
+        <vm:inbound-endpoint path="amqpExistingExchangeService.in">
+            <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+            <message-properties-transformer scope="outbound">
+                <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+            </message-properties-transformer>
+        </vm:inbound-endpoint>
+        <!-- Dispatch to an existing exchange -->
+        <amqp:outbound-endpoint exchangeName="amqpExistingExchangeService-exchange"
+                                connector-ref="amqpConnector"/>
+    </bridge>
+
+    <bridge name="amqpRedeclaredExistingExchangeService" exchange-pattern="one-way">
+        <vm:inbound-endpoint path="amqpRedeclaredExistingExchangeService.in">
+            <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+            <message-properties-transformer scope="outbound">
+                <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+            </message-properties-transformer>
+        </vm:inbound-endpoint>
+        <!-- Dispatch to an existing exchange re-declared in Mule to ensure presence -->
+        <amqp:outbound-endpoint exchangeName="amqpRedeclaredExistingExchangeService-exchange"
+                                exchangeType="fanout"
+                                exchangeAutoDelete="false"
+                                exchangeDurable="false"
+                                connector-ref="amqpConnector"/>
+    </bridge>
+
+    <bridge name="amqpNewExchangeService" exchange-pattern="one-way">
+        <vm:inbound-endpoint path="amqpNewExchangeService.in"/>
+        <!-- Dispatch to a new exchange  -->
+        <amqp:outbound-endpoint exchangeName="amqpNewExchangeService-exchange"
+                                exchangeType="fanout"
+                                exchangeAutoDelete="true"
+                                exchangeDurable="false"
+                                connector-ref="amqpConnector"/>
+    </bridge>
+
+    <flow name="amqpNewExchangeMultiStepService">
+        <vm:inbound-endpoint path="amqpNewExchangeMultiStepService.in" exchange-pattern="one-way"/>
+        <all>
+            <amqp:outbound-endpoint exchangeName="amqpNewExchangeMultiStepService-exchange"
+                                    exchangeType="fanout"
+                                    exchangeAutoDelete="true"
+                                    exchangeDurable="false"
+                                    connector-ref="amqpConnector"/>
+
+            <vm:outbound-endpoint path="amqpNewExchangeMultiStepService.out" exchange-pattern="one-way"/>
+        </all>
+    </flow>
+
+    <bridge name="amqpDefaultExchangeService" exchange-pattern="one-way">
+        <vm:inbound-endpoint path="amqpDefaultExchangeService.in">
+            <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+            <message-properties-transformer scope="outbound">
+                <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+            </message-properties-transformer>
+        </vm:inbound-endpoint>
+        <!-- Dispatch to the default exchange  -->
+        <amqp:outbound-endpoint exchangeName=""
+                                queueName="amqpDefaultExchangeService-queue"
+                                connector-ref="amqpConnector"/>
+    </bridge>
+
+    <bridge name="amqpMessageLevelOverrideService" exchange-pattern="one-way">
+        <vm:inbound-endpoint path="amqpMessageLevelOverrideService.in">
+            <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+            <message-properties-transformer scope="outbound">
+                <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+            </message-properties-transformer>
+            <!-- Define message level overrides for exchange and routing key -->
+            <message-properties-transformer scope="outbound">
+                <add-message-property key="exchange" value="amqpMessageLevelOverrideService-exchange"/>
+                <add-message-property key="routing-key" value="amqpMessageLevelOverrideService-queue"/>
+            </message-properties-transformer>
+        </vm:inbound-endpoint>
+        <amqp:outbound-endpoint exchangeName="thisExchangeWillBeOverriden"
+                                connector-ref="activeOnlyAmqpConnector"/>
+    </bridge>
+
+    <flow name="amqpMandatoryDeliveryFailureNoHandler">
+        <vm:inbound-endpoint path="amqpMandatoryDeliveryFailureNoHandler.in"/>
+
+        <!-- No queue is bound to this exchange so this should fail -->
+        <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliveryFailureNoHandler-exchange"
+                                connector-ref="mandatoryAmqpConnector"/>
+    </flow>
+
+    <vm:endpoint name="returnedMessageChannel" path="amqpMandatoryDeliveryFailure.returnedMessages"/>
+
+    <flow name="amqpMandatoryDeliveryFailureWithHandler">
+        <vm:inbound-endpoint path="amqpMandatoryDeliveryFailureWithHandler.in"/>
+
+        <amqp:return-handler>
+            <vm:outbound-endpoint ref="returnedMessageChannel"/>
+        </amqp:return-handler>
+
+        <!-- No queue is bound to this exchange so this should fail -->
+        <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliveryFailureWithHandler-exchange"
+                                connector-ref="mandatoryAmqpConnector"/>
+    </flow>
+
+    <flow name="returnedMessageProcessor">
+        <inbound-endpoint ref="returnedMessageChannel"/>
+        <test:component/>
+    </flow>
+
+    <bridge name="amqpMandatoryDeliverySuccess" exchange-pattern="one-way">
+        <vm:inbound-endpoint path="amqpMandatoryDeliverySuccess.in">
+            <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+            <message-properties-transformer scope="outbound">
+                <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+            </message-properties-transformer>
+        </vm:inbound-endpoint>
+        <!-- A queue is bound to this exchange so this should succeed -->
+        <amqp:outbound-endpoint exchangeName="amqpMandatoryDeliverySuccess-exchange"
+                                connector-ref="mandatoryAmqpConnector"/>
+    </bridge>
+
+
+    <bridge name="amqpRequestResponseService" exchange-pattern="request-response">
+        <vm:inbound-endpoint path="amqpRequestResponseService.in"
+                             exchange-pattern="request-response">
+            <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+            <message-properties-transformer scope="outbound">
+                <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+            </message-properties-transformer>
+            <response>
+                <message-properties-transformer scope="outbound">
+                    <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+                </message-properties-transformer>
+            </response>
+        </vm:inbound-endpoint>
+        <!-- Send -->
+        <amqp:outbound-endpoint exchange-pattern="request-response"
+                                exchangeName="amqpSendTargetService-exchange"
+                                exchangeType="fanout"
+                                exchangeAutoDelete="false"
+                                exchangeDurable="false"
+                                connector-ref="amqpConnector"/>
+    </bridge>
+
+    <model>
+        <service name="amqpSendTargetService">
+            <inbound>
+                <amqp:inbound-endpoint exchangeName="amqpSendTargetService-exchange"
+                                       exchangeType="fanout"
+                                       exchangeAutoDelete="false"
+                                       exchangeDurable="false"
+                                       queueName="amqpSendTargetService-queue"
+                                       queueDurable="false"
+                                       queueExclusive="false"
+                                       queueAutoDelete="true"
+                                       connector-ref="amqpConnector"
+                                       exchange-pattern="request-response">
+                    <!-- Carry a custom inbound property to the outbound scope so it is preserved in the rest of the message processing flow -->
+                    <message-properties-transformer scope="outbound">
+                        <add-message-property key="customHeader" value="#[header:INBOUND:customHeader]"/>
+                    </message-properties-transformer>
+                </amqp:inbound-endpoint>
+            </inbound>
+            <test:component appendString="-response"/>
+        </service>
+    </model>
+
+    <flow name="amqpOutboundQueue">
+        <vm:inbound-endpoint path="amqpOutBoundQueue.in"/>
+
+        <amqp:outbound-endpoint exchangeName="amqpOutBoundQueue-exchange"
+                                exchangeType="fanout"
+                                queueName="amqpOutBoundQueue-queue"
+                                queueDurable="true"
+                                connector-ref="amqpConnector"/>
+    </flow>
+
+    <flow name="amqpExternalFactoryConnector">
+        <vm:inbound-endpoint path="amqpExternalFactoryConnector.in"/>
+
+        <amqp:outbound-endpoint exchangeName="amqpExternalFactoryConnector-exchange"
+                                exchangeType="fanout"
+                                connector-ref="externalFactoryAmqpConnector"/>
+    </flow>
 </mule>

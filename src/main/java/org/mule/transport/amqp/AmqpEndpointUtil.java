@@ -46,21 +46,21 @@ public abstract class AmqpEndpointUtil
     public static final String CONSUMER_TAG = "consumerTag";
 
     public static String getOrCreateQueue(final Channel channel,
-                                          final InboundEndpoint inboundEndpoint,
+                                          final ImmutableEndpoint endpoint,
                                           final boolean activeDeclarationsOnly) throws IOException
     {
-        final String exchangeName = getOrCreateExchange(channel, inboundEndpoint, activeDeclarationsOnly);
-        final String routingKey = getRoutingKey(inboundEndpoint);
+        final String exchangeName = getOrCreateExchange(channel, endpoint, activeDeclarationsOnly);
+        final String routingKey = getRoutingKey(endpoint);
 
         if ((StringUtils.isBlank(exchangeName)) && (StringUtils.isNotBlank(routingKey)))
         {
             // no exchange name -> enforce routing key to be empty
             throw new MuleRuntimeException(
                 MessageFactory.createStaticMessage("An exchange name must be provided if a routing key is provided in endpoint: "
-                                                   + inboundEndpoint));
+                                                   + endpoint));
         }
 
-        final String queueName = getQueueName(inboundEndpoint.getAddress());
+        final String queueName = getQueueName(endpoint.getAddress());
 
         if (StringUtils.isBlank(queueName))
         {
@@ -70,25 +70,25 @@ public abstract class AmqpEndpointUtil
             final String privateQueueName = queueDeclareResult.getQueue();
             LOG.info("Declared private queue: " + privateQueueName);
 
-            bindQueue(channel, inboundEndpoint, exchangeName, routingKey, privateQueueName);
+            bindQueue(channel, endpoint, exchangeName, routingKey, privateQueueName);
             return privateQueueName;
         }
 
         // queue name -> either create or ensure the queue exists
-        if (inboundEndpoint.getProperties().containsKey(QUEUE_DURABLE)
-            || inboundEndpoint.getProperties().containsKey(QUEUE_AUTO_DELETE)
-            || inboundEndpoint.getProperties().containsKey(QUEUE_EXCLUSIVE))
+        if (endpoint.getProperties().containsKey(QUEUE_DURABLE)
+            || endpoint.getProperties().containsKey(QUEUE_AUTO_DELETE)
+            || endpoint.getProperties().containsKey(QUEUE_EXCLUSIVE))
         {
             // any of the queue declaration parameter provided -> declare the queue
-            final boolean queueDurable = BooleanUtils.toBoolean((String) inboundEndpoint.getProperty(QUEUE_DURABLE));
-            final boolean queueExclusive = BooleanUtils.toBoolean((String) inboundEndpoint.getProperty(QUEUE_EXCLUSIVE));
-            final boolean queueAutoDelete = BooleanUtils.toBoolean((String) inboundEndpoint.getProperty(QUEUE_AUTO_DELETE));
+            final boolean queueDurable = BooleanUtils.toBoolean((String) endpoint.getProperty(QUEUE_DURABLE));
+            final boolean queueExclusive = BooleanUtils.toBoolean((String) endpoint.getProperty(QUEUE_EXCLUSIVE));
+            final boolean queueAutoDelete = BooleanUtils.toBoolean((String) endpoint.getProperty(QUEUE_AUTO_DELETE));
 
             channel.queueDeclare(queueName, queueDurable, queueExclusive, queueAutoDelete, NO_ARGS);
             LOG.info("Declared queue: " + queueName + ", durable: " + queueDurable + ", exclusive: "
                      + queueExclusive + ", autoDelete: " + queueAutoDelete);
 
-            bindQueue(channel, inboundEndpoint, exchangeName, routingKey, queueName);
+            bindQueue(channel, endpoint, exchangeName, routingKey, queueName);
         }
         else if (!activeDeclarationsOnly)
         {
@@ -105,7 +105,7 @@ public abstract class AmqpEndpointUtil
     }
 
     private static void bindQueue(final Channel channel,
-                                  final InboundEndpoint inboundEndpoint,
+                                  final ImmutableEndpoint endpoint,
                                   final String exchangeName,
                                   final String routingKey,
                                   final String queueName) throws IOException
@@ -115,7 +115,7 @@ public abstract class AmqpEndpointUtil
             // default exchange name -> can not bind a queue to it
             throw new MuleRuntimeException(
                 MessageFactory.createStaticMessage("No queue can be programmatically bound to the default exchange: "
-                                                   + inboundEndpoint));
+                                                   + endpoint));
         }
 
         // bind queue to exchange

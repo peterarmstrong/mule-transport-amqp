@@ -202,6 +202,7 @@ public class AmqpConnector extends AbstractConnector
         {
             return routingKey;
         }
+
     }
 
     private static class ConnectorConnectionPoolableObjectFactory extends BasePoolableObjectFactory
@@ -247,10 +248,27 @@ public class AmqpConnector extends AbstractConnector
     @Override
     public void doInitialise() throws InitialisationException
     {
-        connectionFactory = new ConnectionFactory();
-        connectionFactory.setVirtualHost(virtualHost);
-        connectionFactory.setUsername(username);
-        connectionFactory.setPassword(password);
+    	if (connectionFactory == null) {
+        	connectionFactory = new ConnectionFactory();
+        	connectionFactory.setVirtualHost(virtualHost);
+            connectionFactory.setUsername(username);
+            connectionFactory.setPassword(password);
+    	}
+    	else
+        {
+    		if (connectionFactory.getVirtualHost() != null)
+            {
+    			setVirtualHost(connectionFactory.getVirtualHost());
+    		}
+    		else
+            {
+    			connectionFactory.setVirtualHost(virtualHost);
+    		}
+    		setUsername(connectionFactory.getUsername());
+		 	setPassword(connectionFactory.getPassword());
+		 	setHost(connectionFactory.getHost());
+		 	setPort(connectionFactory.getPort());
+    	}
     }
 
     @Override
@@ -398,7 +416,6 @@ public class AmqpConnector extends AbstractConnector
         {
             return runConnectorConnectionAction(new ConnectorConnectionAction<InboundConnection>()
             {
-                @Override
                 public InboundConnection run(final ConnectorConnection connectorConnection) throws Exception
                 {
                     final String queueName = AmqpEndpointUtil.getOrCreateQueue(
@@ -417,18 +434,29 @@ public class AmqpConnector extends AbstractConnector
 
     public OutboundConnection connect(final MessageDispatcher messageDispatcher) throws ConnectException
     {
+
         final OutboundEndpoint outboundEndpoint = messageDispatcher.getEndpoint();
 
         try
         {
             return runConnectorConnectionAction(new ConnectorConnectionAction<OutboundConnection>()
             {
-                @Override
                 public OutboundConnection run(final ConnectorConnection connectorConnection) throws Exception
                 {
-                    String routingKey = AmqpEndpointUtil.getRoutingKey(outboundEndpoint);
+
                     final String exchange = AmqpEndpointUtil.getOrCreateExchange(
                         connectorConnection.getChannel(), outboundEndpoint, activeDeclarationsOnly);
+
+                    if (StringUtils.isNotEmpty(AmqpEndpointUtil.getQueueName(outboundEndpoint.getAddress()))
+                            || outboundEndpoint.getProperties().containsKey(AmqpEndpointUtil.QUEUE_DURABLE)
+                            || outboundEndpoint.getProperties().containsKey(AmqpEndpointUtil.QUEUE_AUTO_DELETE)
+                            || outboundEndpoint.getProperties().containsKey(AmqpEndpointUtil.QUEUE_EXCLUSIVE))
+                    {
+                        AmqpEndpointUtil.getOrCreateQueue(connectorConnection.getChannel(),
+                            outboundEndpoint, activeDeclarationsOnly);
+                    }
+
+                    String routingKey = AmqpEndpointUtil.getRoutingKey(outboundEndpoint);
 
                     // handle dispatching to default exchange
                     if ((StringUtils.isBlank(exchange)) && (StringUtils.isBlank(routingKey)))
@@ -439,9 +467,9 @@ public class AmqpConnector extends AbstractConnector
                             routingKey = queueName;
                         }
                     }
-
-                    return new OutboundConnection(connectorConnection.getAmqpConnector(), exchange,
+                    OutboundConnection oc = new OutboundConnection(connectorConnection.getAmqpConnector(), exchange,
                         routingKey);
+                    return oc;
                 }
             });
         }
@@ -661,5 +689,13 @@ public class AmqpConnector extends AbstractConnector
     public void setExclusiveConsumers(final boolean exclusiveConsumers)
     {
         this.exclusiveConsumers = exclusiveConsumers;
+    }
+
+    public void setConnectionFactory(ConnectionFactory connectionFactory){
+    	this.connectionFactory = connectionFactory;
+    }
+
+    public ConnectionFactory getConnectionFactory() {
+    	return this.connectionFactory;
     }
 }

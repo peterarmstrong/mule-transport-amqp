@@ -32,6 +32,9 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
         setupExchangeAndQueue("amqpExistingExchangeService");
         setupExchangeAndQueue("amqpRedeclaredExistingExchangeService");
         deleteExchange("amqpNewExchangeService");
+        deleteExchange("amqpExternalFactoryConnector");
+        deleteExchange("amqpOutBoundQueue");
+        deleteQueue("amqpOutBoundQueue");
         setupQueue("amqpDefaultExchangeService");
         setupExchangeAndQueue("amqpMessageLevelOverrideService");
         setupExchange("amqpMandatoryDeliveryFailureNoHandler");
@@ -85,6 +88,52 @@ public class AmqpMessageDispatcherITCase extends AbstractAmqpITCase
             }
         }
         fail("Exchange not created by outbound endpoint");
+    }
+
+    public void testOutboundQueueCreation() throws Exception
+    {
+        final String flowName = "amqpOutBoundQueue";
+        new MuleClient(muleContext).dispatch("vm://" + flowName + ".in", "ignored_payload", null);
+
+        // test to see if there is a message on the queue.
+        int attempts = 0;
+        while (attempts++ < DEFAULT_MULE_TEST_TIMEOUT_SECS * 2)
+        {
+            try
+            {
+                if(getChannel().basicGet(getQueueName(flowName), true).getBody() != null )
+                {
+                    return;
+                }
+            }
+            catch (final IOException ioe)
+            {
+                Thread.sleep(500L);
+            }
+        }
+        fail("Queue was not created or message not delivered");
+    }
+
+    public void testExternalConnectionFactory() throws Exception
+    {
+        final String flowName = "amqpExternalFactoryConnector";
+        new MuleClient(muleContext).dispatch("vm://" + flowName + ".in", "ignored_payload", null);
+
+         // there is no queue bound to this new exchange, so we can only test its presence
+        int attempts = 0;
+        while (attempts++ < DEFAULT_MULE_TEST_TIMEOUT_SECS * 2)
+        {
+            try
+            {
+                getChannel().exchangeDeclarePassive(getExchangeName(flowName));
+                return;
+            }
+            catch (final IOException ioe)
+            {
+                Thread.sleep(500L);
+            }
+        }
+        fail("Exchange not created by outbound endpoint when using an external connection factory");
     }
 
     public void testMandatoryDeliveryFailureDefaultHandler() throws Exception
